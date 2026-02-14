@@ -49,11 +49,12 @@ export default function EmailLoginPage() {
             // Simulate API call
             await new Promise((resolve) => setTimeout(resolve, 1500));
 
-            // In production, this would be your actual auth logic
-            console.log("Authenticating:", { email, password, isNewUser });
-
-            // Redirect to dashboard or home after successful login
-            router.push("/");
+            // Redirect to onboarding or home
+            if (isNewUser) {
+                router.push("/onboarding");
+            } else {
+                router.push("/");
+            }
         } catch (err) {
             setError("Authentication failed. Please try again.");
             setIsLoading(false);

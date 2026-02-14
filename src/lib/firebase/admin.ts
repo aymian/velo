@@ -27,45 +27,54 @@ let adminStorage: Storage;
 
 function initializeAdminApp() {
     if (!getApps().length) {
-        const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
+        const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY || process.env.FIREBASE_SERVICE_ACCOUNT;
         const projectId = process.env.FIREBASE_PROJECT_ID || adminConfig.projectId;
         const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
         const privateKey = process.env.FIREBASE_PRIVATE_KEY;
 
-        if (serviceAccountKey) {
-            try {
+        try {
+            if (serviceAccountKey) {
                 const serviceAccount = JSON.parse(serviceAccountKey);
                 adminApp = initializeApp({
                     credential: cert(serviceAccount),
                     ...adminConfig,
                 });
-            } catch (e) {
-                console.error("Failed to parse FIREBASE_SERVICE_ACCOUNT_KEY JSON:", e);
+            } else if (clientEmail && privateKey) {
+                adminApp = initializeApp({
+                    credential: cert({
+                        projectId,
+                        clientEmail,
+                        privateKey: privateKey.replace(/\\n/g, '\n'),
+                    }),
+                    ...adminConfig,
+                });
+            } else {
+                // If we're here, we have no credentials.
+                // Instead of calling initializeApp and crashing with "Could not load default credentials",
+                // we will throw a descriptive error that our API routes can catch.
+                console.error("❌ Firebase Admin Error: Missing credentials in .env");
+                console.error("Please set FIREBASE_SERVICE_ACCOUNT_KEY or (FIREBASE_CLIENT_EMAIL and FIREBASE_PRIVATE_KEY)");
+
+                // We'll initialize with just the project ID for now to prevent immediate crashes in the singleton,
+                // but the DB operations will fail with a clear message.
                 adminApp = initializeApp(adminConfig);
             }
-        } else if (clientEmail && privateKey) {
-            // Initialize using individual fields
-            adminApp = initializeApp({
-                credential: cert({
-                    projectId,
-                    clientEmail,
-                    privateKey: privateKey.replace(/\\n/g, '\n'),
-                }),
-                ...adminConfig,
-            });
-        } else {
-            // Fallback to default credentials (ADC)
-            // This usually fails in local dev unless GOOGLE_APPLICATION_CREDENTIALS is set
-            console.warn("⚠️ Firebase Admin: No credentials provided. Firestore may fail.");
-            adminApp = initializeApp(adminConfig);
+        } catch (e: any) {
+            console.error("❌ Firebase Admin Initialization Failed:", e.message);
+            // Fallback to basic init to prevent total app failure, but it will still fail on DB calls
+            try { adminApp = initializeApp(adminConfig); } catch { adminApp = getApps()[0]; }
         }
     } else {
         adminApp = getApps()[0];
     }
 
-    adminAuth = getAuth(adminApp);
-    adminDb = getFirestore(adminApp);
-    adminStorage = getStorage(adminApp);
+    try {
+        adminAuth = getAuth(adminApp);
+        adminDb = getFirestore(adminApp);
+        adminStorage = getStorage(adminApp);
+    } catch (e) {
+        console.error("❌ Failed to get Firebase services:", e);
+    }
 
     return { adminApp, adminAuth, adminDb, adminStorage };
 }

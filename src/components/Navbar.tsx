@@ -1,12 +1,12 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { VeloLogo } from "./VeloLogo";
 import {
   Search,
-  Sparkles,
+  ThumbsUp,
   Heart,
   Compass,
   MessageCircle,
@@ -19,19 +19,34 @@ import {
 } from "lucide-react";
 import { useAuthStore } from "@/lib/store";
 import { useRouter } from "next/navigation";
+import { UserDropdown } from "./UserDropdown";
+import { SearchOverlay } from "./SearchOverlay";
 
 export function Navbar() {
   const router = useRouter();
   const { user, isAuthenticated, clearUser } = useAuthStore();
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
 
   const navItems = [
-    { name: "For You", icon: Sparkles },
+    { name: "For You", icon: ThumbsUp },
     { name: "Following", icon: Heart },
     { name: "Explore", icon: Compass },
     { name: "Chats", icon: MessageCircle },
   ];
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Open search on 's' key if not typing in an input
+      if (e.key.toLowerCase() === 's' && !isSearchOpen && document.activeElement?.tagName !== 'INPUT' && document.activeElement?.tagName !== 'TEXTAREA') {
+        e.preventDefault();
+        setIsSearchOpen(true);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isSearchOpen]);
 
   const handleLogout = () => {
     // Clear cookie
@@ -88,80 +103,63 @@ export function Navbar() {
       {/* Right Section: Actions & Profile */}
       <div className="flex items-center gap-4 flex-1 justify-end">
         {isAuthenticated ? (
-          <div className="relative">
+          <div className="flex items-center gap-4">
+            {/* Search Trigger */}
             <button
-              onClick={() => setShowProfileMenu(!showProfileMenu)}
-              className="flex items-center gap-2 p-1 pl-3 bg-white/5 hover:bg-white/10 backdrop-blur-md border border-white/10 rounded-full transition-all group"
+              onClick={() => setIsSearchOpen(true)}
+              className="p-3 bg-white/5 hover:bg-white/10 backdrop-blur-md border border-white/10 rounded-full transition-all group"
             >
-              <div className="flex flex-col items-end mr-1 hidden sm:flex">
-                <span className="text-[11px] font-bold text-white leading-tight">{user?.displayName}</span>
-                <span className="text-[9px] text-[#ff4081] font-bold tracking-widest uppercase flex items-center gap-1">
-                  <Crown className="w-2 h-2" /> PRO
-                </span>
-              </div>
-              <div className="relative ring-2 ring-[#ff4081]/30 group-hover:ring-[#ff4081] rounded-full transition-all overflow-hidden w-9 h-9">
-                <img
-                  src={user?.photoURL || `https://ui-avatars.com/api/?name=${user?.displayName}&background=ff4081&color=fff`}
-                  alt="Profile"
-                  className="w-full h-full object-cover"
-                />
-              </div>
-              <ChevronDown className={`w-4 h-4 text-white/40 group-hover:text-white transition-all ${showProfileMenu ? 'rotate-180' : ''}`} />
+              <Search className="w-5 h-5 text-white/60 group-hover:text-white group-hover:scale-110 transition-all" />
             </button>
 
-            {/* Dropdown Menu */}
-            <AnimatePresence>
-              {showProfileMenu && (
-                <>
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="fixed inset-0 z-40"
-                    onClick={() => setShowProfileMenu(false)}
+            <div className="relative">
+              <button
+                onClick={() => setShowProfileMenu(!showProfileMenu)}
+                className="flex items-center gap-2 p-1 pl-3 bg-white/5 hover:bg-white/10 backdrop-blur-md border border-white/10 rounded-full transition-all group"
+              >
+                <div className="flex flex-col items-end mr-1 hidden sm:flex">
+                  <span className="text-[11px] font-bold text-white leading-tight">{user?.displayName}</span>
+                  <span className="text-[9px] text-[#ff4081] font-bold tracking-widest uppercase flex items-center gap-1">
+                    <Crown className="w-2 h-2" /> PRO
+                  </span>
+                </div>
+                <div className="relative ring-2 ring-[#ff4081]/30 group-hover:ring-[#ff4081] rounded-full transition-all overflow-hidden w-9 h-9">
+                  <img
+                    src={user?.photoURL || `https://ui-avatars.com/api/?name=${user?.displayName}&background=ff4081&color=fff`}
+                    alt="Profile"
+                    className="w-full h-full object-cover"
                   />
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.95, y: 10 }}
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                    className="absolute right-0 mt-3 w-64 bg-[#1a1a1a]/90 backdrop-blur-2xl border border-white/10 rounded-3xl overflow-hidden z-50 shadow-2xl"
-                  >
-                    <div className="p-4 border-b border-white/5">
-                      <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 rounded-full overflow-hidden ring-2 ring-pink-500/20">
-                          <img src={user?.photoURL || ""} alt="" className="w-full h-full object-cover" />
-                        </div>
-                        <div>
-                          <p className="text-sm font-bold text-white">{user?.displayName}</p>
-                          <p className="text-[11px] text-white/40 truncate w-32">{user?.email}</p>
-                        </div>
-                      </div>
-                    </div>
+                </div>
+                <ChevronDown className={`w-4 h-4 text-white/40 group-hover:text-white transition-all ${showProfileMenu ? 'rotate-180' : ''}`} />
+              </button>
 
-                    <div className="p-2">
-                      <button className="w-full flex items-center gap-3 px-4 py-3 text-white/80 hover:text-white hover:bg-white/5 rounded-2xl transition-all">
-                        <User className="w-4 h-4" />
-                        <span className="text-sm font-medium">My Profile</span>
-                      </button>
-                      <button className="w-full flex items-center gap-3 px-4 py-3 text-white/80 hover:text-white hover:bg-white/5 rounded-2xl transition-all">
-                        <Settings className="w-4 h-4" />
-                        <span className="text-sm font-medium">Settings</span>
-                      </button>
-                    </div>
-
-                    <div className="p-2 border-t border-white/5">
-                      <button
-                        onClick={handleLogout}
-                        className="w-full flex items-center gap-3 px-4 py-3 text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 rounded-2xl transition-all"
-                      >
-                        <LogOut className="w-4 h-4" />
-                        <span className="text-sm font-medium">Log out</span>
-                      </button>
-                    </div>
-                  </motion.div>
-                </>
-              )}
-            </AnimatePresence>
+              {/* Dropdown Menu */}
+              <AnimatePresence>
+                {showProfileMenu && (
+                  <>
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      className="fixed inset-0 z-40"
+                      onClick={() => setShowProfileMenu(false)}
+                    />
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                      className="absolute right-0 mt-3 w-[320px] bg-[#1a1a1a] backdrop-blur-3xl border border-white/10 rounded-[2rem] overflow-hidden z-50 shadow-[0_20px_50px_rgba(0,0,0,0.5)]"
+                    >
+                      <UserDropdown
+                        user={user}
+                        onLogout={handleLogout}
+                        onClose={() => setShowProfileMenu(false)}
+                      />
+                    </motion.div>
+                  </>
+                )}
+              </AnimatePresence>
+            </div>
           </div>
         ) : (
           <Link href="/login">
@@ -172,6 +170,7 @@ export function Navbar() {
           </Link>
         )}
       </div>
+      <SearchOverlay isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
     </nav>
   );
 }

@@ -80,10 +80,12 @@ export default function PasskeyLoginPage() {
 
             setSuccess(true);
 
+            setSuccess(true);
+
             // Redirect after short delay
             setTimeout(() => {
-                router.push('/');
-            }, 1500);
+                router.push('/onboarding');
+            }, 1000);
 
         } catch (err: any) {
             console.error('Passkey error:', err);
@@ -99,6 +101,10 @@ export default function PasskeyLoginPage() {
 
     const handlePasskeyRegister = async () => {
         if (!isSupported) return;
+        if (pin.length !== 4) {
+            setRegistrationStep("pin");
+            return;
+        }
 
         setIsLoading(true);
         setError("");
@@ -146,6 +152,7 @@ export default function PasskeyLoginPage() {
                         type: credential.type,
                     },
                     challenge: options.challenge,
+                    pin: pin // Send PIN as part of registration
                 }),
             });
 
@@ -157,10 +164,13 @@ export default function PasskeyLoginPage() {
 
             setSuccess(true);
 
-            // Redirect after short delay
+            // Allow user to see success, then take them to the LOGIN view to try it out
             setTimeout(() => {
-                router.push('/');
-            }, 1500);
+                setSuccess(false);
+                setRegistrationStep("initial");
+                setPin("");
+                router.refresh();
+            }, 3000);
 
         } catch (err: any) {
             console.error('Passkey registration error:', err);
@@ -173,6 +183,9 @@ export default function PasskeyLoginPage() {
             setIsLoading(false);
         }
     };
+
+    const [pin, setPin] = useState("");
+    const [registrationStep, setRegistrationStep] = useState<"initial" | "pin">("initial");
 
     return (
         <div className="relative min-h-screen flex flex-col items-center justify-center p-6 overflow-hidden">
@@ -242,7 +255,7 @@ export default function PasskeyLoginPage() {
                 )}
 
                 {/* Action Buttons */}
-                {!success && isSupported && (
+                {!success && isSupported && registrationStep === "initial" && (
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
@@ -267,7 +280,7 @@ export default function PasskeyLoginPage() {
 
                         {/* Register Button */}
                         <button
-                            onClick={handlePasskeyRegister}
+                            onClick={() => setRegistrationStep("pin")}
                             disabled={isLoading}
                             className="w-full bg-black/40 hover:bg-black/60 backdrop-blur-md border border-white/10 hover:border-white/30 text-white font-medium h-14 rounded-full flex items-center justify-center gap-3 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
                         >
@@ -298,6 +311,57 @@ export default function PasskeyLoginPage() {
                                 Passkeys are a secure, passwordless way to sign in using your device's biometrics (fingerprint, face) or PIN. They're more secure than passwords and can't be phished.
                             </p>
                         </motion.div>
+                    </motion.div>
+                )}
+
+                {/* PIN Entry for Registration */}
+                {!success && registrationStep === "pin" && (
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="space-y-8"
+                    >
+                        <div className="text-center space-y-2">
+                            <h2 className="text-2xl font-bold text-white">Create your security PIN</h2>
+                            <p className="text-white/40 text-sm">Set 4 numbers to protect your identity</p>
+                        </div>
+
+                        <div className="flex justify-center gap-4">
+                            {[0, 1, 2, 3].map((i) => (
+                                <div
+                                    key={i}
+                                    className={`w-14 h-16 rounded-2xl border-2 flex items-center justify-center text-3xl font-black transition-all ${pin[i] ? "border-[#ff4081] text-white bg-[#ff4081]/10" : "border-white/10 text-white/20 bg-white/5"
+                                        }`}
+                                >
+                                    {pin[i] ? "●" : ""}
+                                </div>
+                            ))}
+                        </div>
+
+                        <div className="grid grid-cols-3 gap-3">
+                            {[1, 2, 3, 4, 5, 6, 7, 8, 9, "C", 0, "OK"].map((btn) => (
+                                <button
+                                    key={String(btn)}
+                                    onClick={() => {
+                                        if (btn === "C") setPin("");
+                                        else if (btn === "OK") { if (pin.length === 4) handlePasskeyRegister(); }
+                                        else if (String(btn).match(/\d/) && pin.length < 4) setPin(p => p + btn);
+                                    }}
+                                    className={`h-16 rounded-2xl font-bold text-xl flex items-center justify-center transition-all active:scale-95 ${btn === "OK" ? "bg-white text-black disabled:opacity-20" : "bg-white/5 border border-white/5 hover:bg-white/10 text-white"
+                                        }`}
+                                    disabled={btn === "OK" && pin.length !== 4}
+                                >
+                                    {btn}
+                                </button>
+                            ))}
+                        </div>
+
+                        <button
+                            onClick={() => { setRegistrationStep("initial"); setPin(""); }}
+                            className="w-full text-white/40 hover:text-white transition-colors text-xs font-bold uppercase tracking-widest mt-4"
+                        >
+                            Cancel
+                        </button>
                     </motion.div>
                 )}
 

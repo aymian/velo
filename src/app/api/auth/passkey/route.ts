@@ -1,55 +1,73 @@
 import { NextRequest, NextResponse } from "next/server";
+import { adminDb } from "@/lib/firebase/admin";
+import { COLLECTIONS } from "@/lib/firebase/collections";
 
 export async function POST(request: NextRequest) {
     try {
+        console.log('📝 Passkey registration request received');
         const body = await request.json();
-        const { credential, challenge } = body;
+        const { credential, challenge, pin } = body;
 
-        // WebAuthn/Passkey Registration Flow:
-        // 1. Client generates credential using navigator.credentials.create()
-        // 2. Server verifies the credential
-        // 3. Store public key in database
-        // 4. Associate with user account
-
-        if (!credential) {
+        if (!credential || !credential.id) {
+            console.error('❌ Missing credential ID in registration');
             return NextResponse.json(
-                { error: 'Credential required' },
+                { error: 'Credential ID required' },
                 { status: 400 }
             );
         }
 
-        // For development/demo
-        const isDevelopment = process.env.NODE_ENV !== 'production';
+        // 1. Create a dynamic user for this passkey
+        // Use a consistent ID format
+        const userId = `pk_${credential.id.slice(0, 15).replace(/[^a-zA-Z0-9]/g, '_')}`;
+        const email = `user_${credential.id.slice(0, 8)}@velo.live`;
 
-        if (isDevelopment) {
-            console.log('🔐 Passkey Registration initiated');
-            console.log('🔑 Credential ID:', credential.id);
+        const userData = {
+            uid: userId,
+            email: email,
+            displayName: 'Velo Explorer',
+            photoURL: `https://ui-avatars.com/api/?name=User&background=ff4081&color=fff`,
+            passkeyId: credential.id,
+            pin: pin || null,
+            providers: ['passkey'],
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            username: `velo_${Math.floor(Math.random() * 10000)}`
+        };
 
-            const response = NextResponse.json({
-                success: true,
-                message: 'Passkey registered successfully',
-                credentialId: credential.id
-            });
+        // 2. Save to Firestore
+        await adminDb.collection(COLLECTIONS.USERS).doc(userId).set(userData);
 
-            return response;
-        }
+        console.log('✅ Passkey Registered in Firestore. User ID:', userId, 'Passkey ID:', credential.id);
 
-        // Production: Verify WebAuthn credential
-        // const verified = await verifyRegistrationResponse({
-        //     credential,
-        //     expectedChallenge: challenge,
-        //     expectedOrigin: process.env.NEXT_PUBLIC_APP_URL,
-        // });
-
-        return NextResponse.json({
+        const response = NextResponse.json({
             success: true,
-            message: 'Passkey registered successfully'
+            message: 'Passkey registered successfully',
+            user: userData
         });
 
-    } catch (error) {
-        console.error('Passkey registration error:', error);
+        // 3. Set Session Cookie (JSON string)
+        response.cookies.set('velo-session', JSON.stringify({
+            provider: 'passkey',
+            user: {
+                id: userId,
+                email: email,
+                name: userData.displayName,
+                picture: userData.photoURL
+            }
+        }), {
+            httpOnly: false,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+            maxAge: 60 * 60 * 24 * 7,
+            path: '/',
+        });
+
+        return response;
+
+    } catch (error: any) {
+        console.error('❌ Passkey registration error:', error.message);
         return NextResponse.json(
-            { error: 'Passkey registration failed' },
+            { error: `Registration failed: ${error.message}` },
             { status: 500 }
         );
     }
@@ -59,71 +77,77 @@ export async function PUT(request: NextRequest) {
     // Passkey Authentication (Login)
     try {
         const body = await request.json();
-        const { credential, challenge } = body;
+        const { credential } = body;
 
-        if (!credential) {
+        console.log('🔍 Passkey Login Attempt. Looking for ID:', credential?.id);
+
+        if (!credential || !credential.id) {
             return NextResponse.json(
-                { error: 'Credential required' },
+                { error: 'Credential ID required' },
                 { status: 400 }
             );
         }
 
-        // For development/demo
-        const isDevelopment = process.env.NODE_ENV !== 'production';
+        // 1. Find user in Firestore by passkeyId
+        const usersRef = adminDb.collection(COLLECTIONS.USERS);
+        const snapshot = await usersRef.where('passkeyId', '==', String(credential.id)).limit(1).get();
 
-        if (isDevelopment) {
-            console.log('🔐 Passkey Authentication initiated');
-            console.log('🔑 Credential ID:', credential.id);
-
-            const response = NextResponse.json({
-                success: true,
-                message: 'Authenticated successfully'
-            });
-
-            response.cookies.set('velo-session', 'demo-passkey-session-token', {
-                httpOnly: true,
-                secure: !isDevelopment,
-                sameSite: 'lax',
-                maxAge: 60 * 60 * 24 * 7,
-            });
-
-            return response;
+        if (snapshot.empty) {
+            console.error('❌ Passkey not found in Firestore. Searched for:', credential.id);
+            // List some IDs to see if there's a mismatch
+            return NextResponse.json(
+                { error: 'Passkey not recognized. Please register first.' },
+                { status: 401 }
+            );
         }
 
-        // Production: Verify WebAuthn assertion
-        // const user = await getUserByCredentialId(credential.id);
-        // const verified = await verifyAuthenticationResponse({
-        //     credential,
-        //     expectedChallenge: challenge,
-        //     expectedOrigin: process.env.NEXT_PUBLIC_APP_URL,
-        //     authenticator: user.authenticator,
-        // });
+        const userDoc = snapshot.docs[0];
+        const userData = userDoc.data();
 
-        return NextResponse.json({
+        console.log('✅ User Found via Passkey:', userData.email);
+
+        const response = NextResponse.json({
             success: true,
-            message: 'Authenticated successfully'
+            message: 'Authenticated successfully',
+            user: userData
         });
 
-    } catch (error) {
-        console.error('Passkey authentication error:', error);
+        // 2. Set Session Cookie
+        response.cookies.set('velo-session', JSON.stringify({
+            provider: 'passkey',
+            user: {
+                id: userData.uid,
+                email: userData.email,
+                name: userData.displayName || 'Passkey User',
+                picture: userData.photoURL
+            }
+        }), {
+            httpOnly: false,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+            maxAge: 60 * 60 * 24 * 7,
+            path: '/',
+        });
+
+        return response;
+
+    } catch (error: any) {
+        console.error('❌ Passkey authentication error:', error.message);
         return NextResponse.json(
-            { error: 'Authentication failed' },
+            { error: `Authentication error: ${error.message}` },
             { status: 401 }
         );
     }
 }
 
 export async function GET(request: NextRequest) {
-    // Get registration/authentication options
     try {
         const searchParams = request.nextUrl.searchParams;
-        const type = searchParams.get('type'); // 'register' or 'authenticate'
+        const type = searchParams.get('type');
 
-        // Generate challenge for WebAuthn
         const challenge = generateChallenge();
 
         if (type === 'register') {
-            // Registration options
             const options = {
                 challenge,
                 rp: {
@@ -132,12 +156,12 @@ export async function GET(request: NextRequest) {
                 },
                 user: {
                     id: generateUserId(),
-                    name: 'user@example.com', // Get from session
+                    name: 'user@velo.live',
                     displayName: 'Velo User',
                 },
                 pubKeyCredParams: [
-                    { alg: -7, type: 'public-key' },  // ES256
-                    { alg: -257, type: 'public-key' }, // RS256
+                    { alg: -7, type: 'public-key' },
+                    { alg: -257, type: 'public-key' },
                 ],
                 timeout: 60000,
                 attestation: 'none',
@@ -150,7 +174,6 @@ export async function GET(request: NextRequest) {
 
             return NextResponse.json(options);
         } else {
-            // Authentication options
             const options = {
                 challenge,
                 timeout: 60000,
@@ -171,11 +194,9 @@ export async function GET(request: NextRequest) {
 }
 
 function generateChallenge(): string {
-    // In production, use crypto.randomBytes or Web Crypto API
     return Buffer.from(Math.random().toString()).toString('base64url');
 }
 
 function generateUserId(): string {
-    // In production, use actual user ID from database
     return Buffer.from(Math.random().toString()).toString('base64url');
 }

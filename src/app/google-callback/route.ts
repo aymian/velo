@@ -67,7 +67,8 @@ export async function GET(request: NextRequest) {
 
         console.log('✅ Google authentication successful:', userInfo.email);
 
-        // Update user in Firestore
+        // Create session and redirect to verifying page
+        let targetRedirect = state;
         try {
             const userRef = adminDb.collection(COLLECTIONS.USERS).doc(userInfo.id);
             const userDoc = await userRef.get();
@@ -86,6 +87,9 @@ export async function GET(request: NextRequest) {
                 userData.createdAt = new Date();
                 // @ts-ignore
                 userData.username = userInfo.email.split('@')[0] + Math.floor(Math.random() * 1000);
+
+                // If new user, force them to onboarding
+                targetRedirect = '/onboarding';
             }
 
             await userRef.set(userData, { merge: true });
@@ -94,10 +98,9 @@ export async function GET(request: NextRequest) {
             // Continue even if database update fails during local dev
         }
 
-        // Create session and redirect to verifying page
         const verifyingUrl = new URL('/verifying', request.url);
         verifyingUrl.searchParams.set('provider', 'google');
-        verifyingUrl.searchParams.set('redirect', state);
+        verifyingUrl.searchParams.set('redirect', targetRedirect);
 
         const response = NextResponse.redirect(verifyingUrl);
 

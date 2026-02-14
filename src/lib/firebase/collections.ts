@@ -29,6 +29,8 @@ export interface User {
     updatedAt: Date;
     // Social auth providers
     providers?: ('google' | 'twitter' | 'apple' | 'phone' | 'email' | 'passkey')[];
+    passkeyId?: string;
+    pin?: string;
 }
 
 // Post type
