@@ -17,6 +17,8 @@ export const metadata: Metadata = {
   },
 };
 
+import { Providers } from "@/components/providers/QueryProvider";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -25,7 +27,9 @@ export default function RootLayout({
   return (
     <html lang="en" className={lato.variable}>
       <body className="antialiased bg-black min-h-screen">
-        {children}
+        <Providers>
+          {children}
+        </Providers>
       </body>
     </html>
   );

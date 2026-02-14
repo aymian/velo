@@ -75,7 +75,7 @@ export default function SignupPage() {
                             className="w-full"
                         >
                             {/* For now reusing LoginForm but ideally should be SignupForm */}
-                            <LoginForm />
+                            <LoginForm title="Create Account" subtitle="Join the Velo community today" />
                         </motion.div>
                     )}
                 </AnimatePresence>

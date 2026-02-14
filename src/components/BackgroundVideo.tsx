@@ -11,12 +11,52 @@ export function BackgroundVideo({ className = "", blur = false }: BackgroundVide
     const videoRef = useRef<HTMLVideoElement>(null);
 
     useEffect(() => {
-        if (videoRef.current) {
-            videoRef.current.playbackRate = 0.75; // Optional: slow down slightly for better aesthetic
-            videoRef.current.play().catch(error => {
-                console.error("Auto-play was prevented:", error);
-            });
-        }
+        const video = videoRef.current;
+        if (!video) return;
+
+        // Force play and handle errors
+        const playVideo = async () => {
+            try {
+                video.playbackRate = 0.75;
+                await video.play();
+            } catch (error) {
+                console.warn("Video autoplay prevented:", error);
+                // Retry after a short delay
+                setTimeout(() => {
+                    video.play().catch(() => {
+                        // Silent fail - user interaction required
+                    });
+                }, 100);
+            }
+        };
+
+        playVideo();
+
+        // Prevent pausing when tab is hidden/visible
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === 'visible' && video.paused) {
+                playVideo();
+            }
+        };
+
+        // Force play if video pauses for any reason
+        const handlePause = () => {
+            // Small delay to prevent infinite loop
+            setTimeout(() => {
+                if (video.paused) {
+                    playVideo();
+                }
+            }, 100);
+        };
+
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        video.addEventListener('pause', handlePause);
+
+        // Cleanup
+        return () => {
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+            video.removeEventListener('pause', handlePause);
+        };
     }, []);
 
     return (
@@ -30,6 +70,8 @@ export function BackgroundVideo({ className = "", blur = false }: BackgroundVide
                 className={`w-full h-full object-cover ${blur ? "blur-md scale-105" : ""}`}
                 poster="https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=1920&h=1080&fit=crop"
                 preload="auto"
+                disablePictureInPicture
+                controlsList="nodownload nofullscreen noremoteplayback"
             >
                 <source
                     src="https://ext.same-assets.com/3286759155/3805063196.mp4"
