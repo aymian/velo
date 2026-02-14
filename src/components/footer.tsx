@@ -16,6 +16,7 @@ import {
   Send
 } from "lucide-react";
 import { VeloLogo } from "./VeloLogo";
+import { TypewriterEffect } from "./ui/TypewriterEffect";
 
 const footerLinks = {
   company: [
@@ -50,11 +51,11 @@ export default function VeloFooter() {
           <div className="absolute top-0 right-0 w-full h-full bg-gradient-to-bl from-pink-900/10 via-transparent to-transparent opacity-50 pointer-events-none"></div>
 
           <div className="relative z-10 max-w-3xl mx-auto space-y-6">
-            <h2 className="text-4xl md:text-5xl font-black text-white tracking-tight">
-              Ready to start your journey?
+            <h2 className="text-4xl md:text-5xl font-black text-white tracking-tight min-h-[1.2em]">
+              <TypewriterEffect text="Ready to start your journey?" delay={0.2} />
             </h2>
-            <p className="text-lg text-zinc-400 max-w-xl mx-auto">
-              Enter your email to create your account or restart your membership. Join the Velo community today.
+            <p className="text-lg text-zinc-400 max-w-xl mx-auto min-h-[3em]">
+              <TypewriterEffect text="Enter your email to create your account or restart your membership. Join the Velo community today." delay={1.5} cursorColor="#a1a1aa" />
             </p>
 
             {/* Email Input Group */}

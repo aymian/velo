@@ -39,7 +39,7 @@ export function VeloLogo({ className = "", showText = true }: VeloLogoProps) {
 
             {showText && (
                 <span className="text-2xl font-bold text-white tracking-tight font-sans">
-                    velo
+                    veeloo
                 </span>
             )}
         </div>

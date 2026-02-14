@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import Link from "next/link";
 import { VeloLogo } from "./VeloLogo";
 import {
   Search,
@@ -45,8 +46,8 @@ export function Navbar() {
               <div className={`transition-all duration-300 transform ${isHovered ? "-translate-y-1 scale-110" : ""}`}>
                 <Icon
                   className={`w-7 h-7 transition-all duration-300 ${isHovered
-                      ? "text-[#ff4081] drop-shadow-[0_0_10px_rgba(255,64,129,0.5)] fill-[#ff4081]/10"
-                      : "text-white/80"
+                    ? "text-[#ff4081] drop-shadow-[0_0_10px_rgba(255,64,129,0.5)] fill-[#ff4081]/10"
+                    : "text-white/80"
                     }`}
                   strokeWidth={isHovered ? 2.5 : 2}
                 />
@@ -75,10 +76,12 @@ export function Navbar() {
 
 
         {/* Sign In Button */}
-        <button className="bg-gradient-to-r from-[#ff1493] to-[#ff69b4] hover:from-[#ff0080] hover:to-[#ff50a0] text-white px-6 py-2 rounded-full font-semibold text-sm flex items-center gap-2 shadow-lg shadow-pink-500/20 transition-all hover:scale-105 active:scale-95">
-          <LogIn className="w-4 h-4" />
-          Sign in
-        </button>
+        <Link href="/login">
+          <button className="bg-gradient-to-r from-[#ff1493] to-[#ff69b4] hover:from-[#ff0080] hover:to-[#ff50a0] text-white px-6 py-2 rounded-full font-semibold text-sm flex items-center gap-2 shadow-lg shadow-pink-500/20 transition-all hover:scale-105 active:scale-95">
+            <LogIn className="w-4 h-4" />
+            Sign in
+          </button>
+        </Link>
       </div>
     </nav>
   );

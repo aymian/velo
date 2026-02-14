@@ -9,9 +9,9 @@ const lato = Lato({
 });
 
 export const metadata: Metadata = {
-  title: "Velo Live - Live Stream & Video Chat",
+  title: "Veeloo Live - Live Stream & Video Chat",
   description:
-    "Velo is your free video chat and live streaming platform to meet new people, stream live, and connect in real time, anytime. Join now and start chatting.",
+    "Veeloo is your free video chat and live streaming platform to meet new people, stream live, and connect in real time, anytime. Join now and start chatting.",
   icons: {
     icon: "https://ext.same-assets.com/3286759155/2637069616.ico",
   },
