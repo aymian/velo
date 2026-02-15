@@ -63,18 +63,18 @@ export const ForYouVideo = ({ post, isActive }: ForYouVideoProps) => {
                     {muted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
                 </button>
 
-                {/* 2. Side Engagement Panel - Minimalist Gray Palette */}
+                {/* 2. Side Engagement Panel - Vibrant Tango Pink Palette */}
                 <div className="absolute right-4 bottom-20 z-50 flex flex-col items-center gap-6">
-                    {/* Creator Avatar - Simplified */}
+                    {/* Creator Avatar - Simplified Flat */}
                     <div className="relative mb-2">
                         <div className="w-10 h-10 rounded-full border border-white/20 overflow-hidden bg-[#111]">
                             <img
                                 src={creator?.photoURL || `https://ui-avatars.com/api/?name=${creator?.displayName || post.creatorId}&background=random`}
-                                className="w-full h-full object-cover grayscale"
+                                className="w-full h-full object-cover"
                                 alt="avatar"
                             />
                         </div>
-                        <button className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-4 h-4 bg-white text-black rounded-full flex items-center justify-center border border-black transition-transform hover:scale-110">
+                        <button className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-4 h-4 bg-[#FF2D55] text-white rounded-full flex items-center justify-center border border-black transition-transform hover:scale-110">
                             <UserPlus className="w-2.5 h-2.5" />
                         </button>
                     </div>
@@ -90,12 +90,13 @@ export const ForYouVideo = ({ post, isActive }: ForYouVideoProps) => {
                             onClick={btn.onClick}
                             className="flex flex-col items-center gap-1.5 group"
                         >
-                            <div className={`w-10 h-10 rounded-full flex items-center justify-center border transition-all duration-300 ${btn.active ? 'bg-white border-white text-black scale-110' :
-                                    'bg-black/40 border-white/10 text-white/60 hover:text-white hover:border-white/30'
+                            <div className={`w-10 h-10 rounded-full flex items-center justify-center border transition-all duration-300 ${btn.active
+                                ? 'bg-[#FF2D55] border-[#FF2D55] text-white scale-110 shadow-[0_0_20px_rgba(255,45,85,0.3)]'
+                                : 'bg-[#111] border-white/10 text-white/40 group-hover:text-white group-hover:border-[#FF2D55]/50'
                                 }`}>
                                 <btn.icon className={`w-4 h-4 ${btn.active ? 'fill-current' : ''}`} />
                             </div>
-                            <span className="text-[9px] font-bold uppercase tracking-widest text-white/30 group-hover:text-white/60 transition-colors">
+                            <span className={`text-[9px] font-black uppercase tracking-widest transition-colors ${btn.active ? 'text-[#FF2D55]' : 'text-white/20 group-hover:text-white/60'}`}>
                                 {btn.val}
                             </span>
                         </button>

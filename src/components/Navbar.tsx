@@ -81,7 +81,7 @@ export function Navbar() {
               <div className={`transition-all duration-300 transform ${isHovered ? "-translate-y-1 scale-110" : ""}`}>
                 <Icon
                   className={`w-6 h-6 transition-all duration-300 ${isHovered
-                    ? "text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.3)]"
+                    ? "text-[#FF2D55] drop-shadow-[0_0_8px_rgba(255,45,85,0.2)]"
                     : "text-white/40"
                     }`}
                   strokeWidth={isHovered ? 2.5 : 2}
@@ -93,8 +93,8 @@ export function Navbar() {
                 {item.name}
               </span>
 
-              {/* Minimalist dot indicator */}
-              <span className={`absolute -bottom-1 w-1 h-1 rounded-full bg-white transition-all duration-300 ${isHovered ? "opacity-100 scale-100" : "opacity-0 scale-0"
+              {/* Pink dot indicator */}
+              <span className={`absolute -bottom-1 w-1 h-1 rounded-full bg-[#FF2D55] transition-all duration-300 ${isHovered ? "opacity-100 scale-100" : "opacity-0 scale-0"
                 }`} />
             </Link>
           );
@@ -108,27 +108,27 @@ export function Navbar() {
             {/* Search Trigger */}
             <button
               onClick={() => setIsSearchOpen(true)}
-              className="p-2.5 bg-white/5 hover:bg-white/10 border border-white/5 rounded-full transition-all group"
+              className="p-2.5 bg-[#111] hover:bg-[#222] border border-white/5 rounded-full transition-all group"
             >
-              <Search className="w-4 h-4 text-white/40 group-hover:text-white transition-all" />
+              <Search className="w-4 h-4 text-white/40 group-hover:text-[#FF2D55] transition-all" />
             </button>
 
             <div className="relative">
               <button
                 onClick={() => setShowProfileMenu(!showProfileMenu)}
-                className="flex items-center gap-3 p-1 pl-3 bg-white/5 hover:bg-white/10 border border-white/5 rounded-full transition-all group"
+                className="flex items-center gap-3 p-1 pl-3 bg-[#111] hover:bg-[#1A1A1A] border border-white/5 rounded-full transition-all group"
               >
                 <div className="flex flex-col items-end hidden sm:flex">
                   <span className="text-[11px] font-bold text-white/80 leading-tight">{user?.displayName}</span>
-                  <span className="text-[9px] text-white/30 font-bold tracking-widest uppercase flex items-center gap-1">
-                    <Crown className="w-2 h-2 text-white/20" /> PLATINUM
+                  <span className="text-[9px] text-[#FF2D55] font-black tracking-widest uppercase flex items-center gap-1 italic">
+                    <Crown className="w-2.5 h-2.5" /> LEGENDARY
                   </span>
                 </div>
-                <div className="relative border border-white/10 group-hover:border-white/30 rounded-full transition-all overflow-hidden w-8 h-8">
+                <div className="relative border border-white/10 group-hover:border-[#FF2D55]/50 rounded-full transition-all overflow-hidden w-8 h-8">
                   <img
                     src={user?.photoURL || `https://ui-avatars.com/api/?name=${user?.displayName}&background=333&color=fff`}
                     alt="Profile"
-                    className="w-full h-full object-cover grayscale"
+                    className="w-full h-full object-cover"
                   />
                 </div>
                 <ChevronDown className={`w-3.5 h-3.5 text-white/20 group-hover:text-white transition-all ${showProfileMenu ? 'rotate-180' : ''}`} />
@@ -149,7 +149,7 @@ export function Navbar() {
                       initial={{ opacity: 0, scale: 0.95, y: 10 }}
                       animate={{ opacity: 1, scale: 1, y: 0 }}
                       exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                      className="absolute right-0 mt-3 w-[320px] bg-[#1a1a1a] backdrop-blur-3xl border border-white/10 rounded-[2rem] overflow-hidden z-50 shadow-[0_20px_50px_rgba(0,0,0,0.5)]"
+                      className="absolute right-0 mt-3 w-[320px] bg-[#111] border border-white/10 rounded-[2rem] overflow-hidden z-50 shadow-[0_20px_50px_rgba(0,0,0,0.8)]"
                     >
                       <UserDropdown
                         user={user}
@@ -164,7 +164,7 @@ export function Navbar() {
           </div>
         ) : (
           <Link href="/login">
-            <button className="bg-gradient-to-r from-[#ff1493] to-[#ff69b4] hover:from-[#ff0080] hover:to-[#ff50a0] text-white px-6 py-2 rounded-full font-semibold text-sm flex items-center gap-2 shadow-lg shadow-pink-500/20 transition-all hover:scale-105 active:scale-95">
+            <button className="bg-[#FF2D55] hover:bg-[#FF0040] text-white px-6 py-2 rounded-full font-bold text-[11px] uppercase tracking-widest flex items-center gap-2 shadow-xl shadow-pink-500/10 transition-all hover:scale-105 active:scale-95">
               <LogIn className="w-4 h-4" />
               Sign in
             </button>

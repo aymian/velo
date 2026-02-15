@@ -8,13 +8,15 @@ import {
     Image as ImageIcon,
     Smile,
     AlignLeft,
-    List,
     MapPin,
     MoreHorizontal,
     Copy,
     Plus,
     Gem,
-    Loader2
+    Loader2,
+    Play,
+    ChevronRight,
+    List
 } from "lucide-react";
 import { useCreateStore, useAuthStore, useNotificationStore } from "@/lib/store";
 import { db } from "@/lib/firebase/config";
@@ -117,94 +119,153 @@ export default function CreatePostPage() {
     };
 
     return (
-        <div className="min-h-screen bg-[#0a0a0a] text-white selection:bg-white/10 relative overflow-hidden">
+        <div className="min-h-screen bg-[#050505] text-white selection:bg-white/10 relative overflow-hidden">
             <Navbar />
 
-            {/* Dark Backdrop */}
-            <div className="absolute inset-0 bg-black/40 z-10" />
+            {/* 🎞️ Kinetic Background Video */}
+            <div className="absolute inset-0 z-0 select-none pointer-events-none">
+                <video
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
+                    className="w-full h-full object-cover opacity-30 grayscale saturate-0"
+                >
+                    <source src="https://ext.same-assets.com/207502500/245264620.mp4" type="video/mp4" />
+                </video>
+                {/* Midnight Vignette Overlay */}
+                <div className="absolute inset-0 bg-gradient-to-b from-[#050505] via-transparent to-[#050505]" />
+                <div className="absolute inset-0 bg-black/60" />
+            </div>
 
             <main className="relative z-20 flex items-center justify-center h-[calc(100vh-80px)] mt-16 px-4">
 
-                {/* --- COMPOSER MODAL (EXACT MATCH TO IMAGE) --- */}
-                <motion.div
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    className="w-full max-w-xl bg-[#111] rounded-3xl border border-white/10 shadow-3xl overflow-hidden"
-                >
-                    {/* Header */}
-                    <div className="px-6 h-14 flex items-center justify-between border-b border-white/5">
-                        <X onClick={() => router.back()} className="w-5 h-5 cursor-pointer hover:opacity-70" />
-                        <h2 className="text-sm font-bold">New thread</h2>
-                        <div className="flex items-center gap-4">
-                            <Copy className="w-5 h-5 opacity-40" />
-                            <MoreHorizontal className="w-5 h-5 opacity-40" />
-                        </div>
-                    </div>
-
-                    <div className="p-6">
-                        <div className="flex gap-4">
-                            {/* Avatar & Vertical Line */}
-                            <div className="flex flex-col items-center">
-                                <img
-                                    src={user?.photoURL || "https://ui-avatars.com/api/?name=U&background=333&color=fff"}
-                                    className="w-10 h-10 rounded-full object-cover"
-                                />
-                                <div className="w-[1px] flex-1 bg-white/10 my-2" />
-                                <div className="w-4 h-4 rounded-full bg-white/5" />
+                <div className="flex flex-col lg:flex-row items-center gap-12 w-full max-w-6xl">
+                    {/* --- COMPOSER MODAL (LEFT) --- */}
+                    <motion.div
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        className="w-full max-w-xl bg-[#111] rounded-[32px] border border-white/10 shadow-3xl overflow-hidden"
+                    >
+                        {/* Header */}
+                        <div className="px-6 h-14 flex items-center justify-between border-b border-white/5">
+                            <X onClick={() => router.back()} className="w-5 h-5 cursor-pointer hover:opacity-70" />
+                            <h2 className="text-sm font-bold">New thread</h2>
+                            <div className="flex items-center gap-4">
+                                <Copy className="w-5 h-5 opacity-40" />
+                                <MoreHorizontal className="w-5 h-5 opacity-40" />
                             </div>
+                        </div>
 
-                            {/* Content Matrix */}
-                            <div className="flex-1 space-y-1">
-                                <div className="flex items-center gap-1.5">
-                                    <span className="text-[13px] font-bold">soul.of.ian</span>
-                                    <span className="text-white/20 text-xs">Add a topic</span>
+                        <div className="p-6">
+                            <div className="flex gap-4">
+                                {/* Avatar & Vertical Line */}
+                                <div className="flex flex-col items-center">
+                                    <img
+                                        src={user?.photoURL || "https://ui-avatars.com/api/?name=U&background=333&color=fff"}
+                                        className="w-10 h-10 rounded-full object-cover"
+                                    />
+                                    <div className="w-[1px] flex-1 bg-white/10 my-2" />
+                                    <div className="w-4 h-4 rounded-full bg-white/5" />
                                 </div>
 
-                                <textarea
-                                    value={caption}
-                                    onChange={(e) => setCaption(e.target.value)}
-                                    placeholder="What's new?"
-                                    className="w-full bg-transparent border-none p-0 text-[14px] outline-none placeholder:text-white/20 resize-none min-h-[40px] mb-4"
-                                />
-
-                                {videoPreview && (
-                                    <div className="relative rounded-xl overflow-hidden border border-white/10 mb-4 bg-black">
-                                        <video src={videoPreview} className="w-full h-48 object-cover" muted autoPlay loop />
-                                        <X onClick={() => setVideoFile(null, null)} className="absolute top-2 right-2 w-4 h-4 cursor-pointer bg-black/60 rounded-full p-1" />
+                                {/* Content Matrix */}
+                                <div className="flex-1 space-y-1">
+                                    <div className="flex items-center gap-1.5">
+                                        <span className="text-[13px] font-bold">{user?.displayName?.toLowerCase().replace(/\s/g, '') || "soul.of.ian"}</span>
+                                        <ChevronRight className="w-3 h-3 text-white/20" />
+                                        <span className="text-white/20 text-xs">Add a topic</span>
                                     </div>
-                                )}
 
-                                {/* Icon Bar */}
-                                <div className="flex items-center gap-5 pb-8">
-                                    <ImageIcon onClick={() => fileInputRef.current?.click()} className="w-5 h-5 text-white/30 cursor-pointer hover:text-white" />
-                                    <div className="text-[9px] font-black border border-white/20 rounded px-1 text-white/30">GIF</div>
-                                    <Smile className="w-5 h-5 text-white/30" />
-                                    <AlignLeft className="w-5 h-5 text-white/30 rotate-180" />
-                                    <List className="w-5 h-5 text-white/30" />
-                                    <MapPin className="w-5 h-5 text-white/30" />
+                                    <textarea
+                                        value={caption}
+                                        onChange={(e) => setCaption(e.target.value)}
+                                        placeholder="What's new?"
+                                        className="w-full bg-transparent border-none p-0 text-[14px] outline-none placeholder:text-white/20 resize-none min-h-[40px] mb-4"
+                                    />
+
+                                    {/* Icon Bar */}
+                                    <div className="flex items-center gap-5 pb-8">
+                                        <ImageIcon onClick={() => fileInputRef.current?.click()} className="w-5 h-5 text-white/30 cursor-pointer hover:text-white" />
+                                        <div className="text-[9px] font-black border border-white/20 rounded px-1 text-white/30">GIF</div>
+                                        <Smile className="w-5 h-5 text-white/30" />
+                                        <AlignLeft className="w-5 h-5 text-white/30 rotate-180" />
+                                        <List className="w-5 h-5 text-white/30" />
+                                        <MapPin className="w-5 h-5 text-white/30" />
+                                    </div>
                                 </div>
-
-                                <div className="text-[13px] text-white/10">Add to thread</div>
                             </div>
                         </div>
-                    </div>
 
-                    {/* Footer */}
-                    <div className="px-6 py-4 flex items-center justify-between">
-                        <div className="flex items-center gap-2 opacity-30 group cursor-pointer">
-                            <Plus className="w-4 h-4 border border-white rounded-sm p-0.5" />
-                            <span className="text-sm font-medium">Reply options</span>
+                        {/* Footer */}
+                        <div className="px-6 py-4 flex items-center justify-between">
+                            <div className="flex items-center gap-2 opacity-30 group cursor-pointer">
+                                <Plus className="w-4 h-4 border border-white rounded-sm p-0.5" />
+                                <span className="text-sm font-medium">Reply options</span>
+                            </div>
+                            <button
+                                onClick={handlePublish}
+                                disabled={!caption || isUploading}
+                                className={`px-6 py-1.5 rounded-xl font-bold text-sm ${caption && !isUploading ? "bg-white text-black" : "opacity-30 pointer-events-none"
+                                    }`}
+                            >
+                                Post
+                            </button>
                         </div>
-                        <button
-                            onClick={handlePublish}
-                            disabled={!caption || isUploading}
-                            className={`px-6 py-1.5 rounded-xl font-bold text-sm ${caption && !isUploading ? "bg-white text-black" : "opacity-30 pointer-events-none"
-                                }`}
-                        >
-                            Post
-                        </button>
-                    </div>
-                </motion.div>
+                    </motion.div>
+
+                    {/* --- LIVE PREVIEW (RIGHT - TIKTOK STYLE) --- */}
+                    <motion.div
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        className="hidden lg:flex flex-col items-center space-y-6"
+                    >
+                        <span className="text-[10px] font-black uppercase tracking-[0.3em] text-white/20">Live Output Preview</span>
+
+                        <div className="relative w-[280px] h-[520px] rounded-[48px] border-[6px] border-[#222] shadow-[0_40px_100px_rgba(0,0,0,0.8)] overflow-hidden bg-black flex items-center justify-center group">
+                            {videoPreview ? (
+                                <>
+                                    <video src={videoPreview} className="w-full h-full object-cover opacity-80" autoPlay loop muted playsInline />
+                                    {/* Mock UI Overlays */}
+                                    <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/60 pointer-events-none" />
+                                    <div className="absolute bottom-10 left-6 right-10 flex flex-col gap-2">
+                                        <span className="text-[11px] font-black text-white leading-none">@{user?.displayName?.toLowerCase().replace(/\s/g, '') || 'v_creator'}</span>
+                                        <p className="text-[10px] text-white/70 line-clamp-2 leading-relaxed">
+                                            {caption || "Your manuscript narrative will appear here..."}
+                                        </p>
+                                    </div>
+                                    <div className="absolute right-3 bottom-20 flex flex-col gap-5 items-center">
+                                        <div className="w-9 h-9 rounded-full bg-white/10 border border-white/20" />
+                                        <div className="w-7 h-7 rounded-full bg-white/10" />
+                                        <div className="w-7 h-7 rounded-full bg-white/10" />
+                                    </div>
+                                </>
+                            ) : (
+                                <div className="text-center p-8 space-y-4">
+                                    <div className="w-16 h-16 bg-white/[0.03] rounded-full flex items-center justify-center mx-auto border border-white/5">
+                                        <Play className="w-6 h-6 text-white/10" />
+                                    </div>
+                                    <p className="text-[10px] font-bold text-white/20 uppercase tracking-widest leading-loose">
+                                        Upload media to <br /> generate output
+                                    </p>
+                                </div>
+                            )}
+
+                            {/* X to remove media in preview mode too */}
+                            {videoPreview && (
+                                <X
+                                    onClick={() => setVideoFile(null, null)}
+                                    className="absolute top-6 right-6 w-6 h-6 p-1.5 cursor-pointer bg-black/40 hover:bg-black/60 border border-white/10 rounded-full transition-all text-white active:scale-90"
+                                />
+                            )}
+                        </div>
+
+                        <div className="flex items-center gap-1.5 px-3 py-1.5 bg-white/5 rounded-full border border-white/5">
+                            <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
+                            <span className="text-[9px] font-black uppercase text-white/30 tracking-widest">Real-time Syncing</span>
+                        </div>
+                    </motion.div>
+                </div>
             </main>
 
             {/* Flat Loader */}

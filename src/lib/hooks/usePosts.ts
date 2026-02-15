@@ -1,11 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { collection, query, where, orderBy, getDocs, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase/config";
-import { COLLECTIONS } from "@/lib/firebase/collections";
+import { COLLECTIONS, Post } from "@/lib/firebase/collections";
 
 // 🚀 Hook for fetching a creator's posts with high-performance caching
 export function useCreatorPosts(creatorId: string | undefined) {
-    return useQuery({
+    return useQuery<Post[]>({
         queryKey: ["posts", creatorId],
         queryFn: async () => {
             if (!creatorId) return [];
@@ -15,7 +15,7 @@ export function useCreatorPosts(creatorId: string | undefined) {
                 orderBy("createdAt", "desc")
             );
             const snapshot = await getDocs(q);
-            return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Post));
         },
         enabled: !!creatorId,
         staleTime: 1000 * 60 * 5, // 5 minutes (User doesn't need to refetch often)
@@ -27,7 +27,7 @@ export function useCreatorPosts(creatorId: string | undefined) {
 export function useRealtimeCreatorPosts(creatorId: string | undefined) {
     const queryClient = useQueryClient();
 
-    return useQuery({
+    return useQuery<Post[]>({
         queryKey: ["posts", creatorId, "realtime"],
         queryFn: () => {
             if (!creatorId) return [];
@@ -38,9 +38,9 @@ export function useRealtimeCreatorPosts(creatorId: string | undefined) {
             );
 
             // This setup allows us to keep the cache updated while having a real-time listener
-            return new Promise((resolve) => {
+            return new Promise<Post[]>((resolve) => {
                 const unsubscribe = onSnapshot(q, (snapshot) => {
-                    const posts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    const posts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Post));
                     // Update the primary query cache so other components benefit
                     queryClient.setQueryData(["posts", creatorId], posts);
                     resolve(posts);
@@ -53,7 +53,7 @@ export function useRealtimeCreatorPosts(creatorId: string | undefined) {
 }
 // 🚀 Hook for fetching the "For You" global feed
 export function useForYouPosts() {
-    return useQuery({
+    return useQuery<Post[]>({
         queryKey: ["posts", "foryou"],
         queryFn: async () => {
             const q = query(
@@ -62,7 +62,7 @@ export function useForYouPosts() {
                 // In a real app we'd add visibility checks here, but keep it simple for now
             );
             const snapshot = await getDocs(q);
-            return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Post));
         },
         staleTime: 1000 * 60, // 1 minute (Keep it fresh)
         gcTime: 1000 * 60 * 5, // 5 minutes

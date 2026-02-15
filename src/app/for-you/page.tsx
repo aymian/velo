@@ -93,50 +93,50 @@ export default function ForYouPage() {
                             initial={{ x: -300, opacity: 0 }}
                             animate={{ x: 0, opacity: 1 }}
                             exit={{ x: -300, opacity: 0 }}
-                            className="hidden xl:flex w-[380px] border-r border-white/[0.03] flex-col p-10 space-y-12 bg-black/20 overflow-y-auto"
+                            className="hidden xl:flex w-[380px] border-r border-white/5 flex-col p-10 space-y-12 bg-[#050505] overflow-y-auto"
                         >
                             <button
                                 onClick={() => setViewMode('grid')}
-                                className="flex items-center gap-2 text-white/40 hover:text-white transition-colors group mb-4"
+                                className="flex items-center gap-2 text-white/40 hover:text-[#FF2D55] transition-colors group mb-4"
                             >
                                 <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-                                <span className="text-[10px] font-bold uppercase tracking-widest">Back to Grid</span>
+                                <span className="text-[10px] font-black uppercase tracking-widest">Back to Grid</span>
                             </button>
 
                             <div className="space-y-4">
-                                <label className="text-[10px] font-bold uppercase tracking-[0.25em] text-white/30">Active Manuscript</label>
-                                <h1 className="text-xl font-medium tracking-tight leading-relaxed text-white/90 line-clamp-3">
+                                <label className="text-[10px] font-black uppercase tracking-[0.25em] text-white/20 italic">Active Manuscript</label>
+                                <h1 className="text-xl font-bold tracking-tight leading-relaxed text-white">
                                     {activePost?.caption || "Viewing Thread"}
                                 </h1>
                             </div>
 
                             <div className="space-y-8">
-                                <div className="p-8 bg-white/[0.02] rounded-[32px] border border-white/[0.05] space-y-8">
+                                <div className="p-8 bg-[#111] rounded-[32px] border border-white/5 space-y-8">
                                     <div className="flex items-center gap-4">
-                                        <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center border border-white/10">
-                                            <Users className="w-4 h-4 text-white/40" />
+                                        <div className="w-10 h-10 rounded-full bg-[#1A1A1A] flex items-center justify-center border border-white/5">
+                                            <Users className="w-4 h-4 text-[#FF2D55]" />
                                         </div>
                                         <div className="flex flex-col">
-                                            <span className="text-[10px] font-bold text-white/20 uppercase tracking-widest">Post Creator</span>
-                                            <span className="text-sm font-semibold text-white/80">@{activePost?.creatorId.slice(0, 12)}</span>
+                                            <span className="text-[10px] font-black text-white/20 uppercase tracking-widest">Post Creator</span>
+                                            <span className="text-sm font-black text-white">@{activePost?.creatorId?.slice(0, 12) || 'anonymous'}</span>
                                         </div>
                                     </div>
                                     <div className="grid grid-cols-2 gap-8">
                                         <div className="space-y-1">
-                                            <p className="text-[22px] font-light tracking-tighter">12.8k</p>
-                                            <p className="text-[9px] font-bold text-white/20 uppercase tracking-[0.15em]">Followers</p>
+                                            <p className="text-[22px] font-black tracking-tighter text-[#FF2D55]">12.8k</p>
+                                            <p className="text-[9px] font-black text-white/20 uppercase tracking-[0.15em]">Followers</p>
                                         </div>
                                         <div className="space-y-1">
-                                            <p className="text-[22px] font-light tracking-tighter">{activePost?.engagement?.likes || 0}</p>
-                                            <p className="text-[9px] font-bold text-white/20 uppercase tracking-[0.15em]">Total Likes</p>
+                                            <p className="text-[22px] font-black tracking-tighter text-[#FF2D55]">{activePost?.engagement?.likes || 0}</p>
+                                            <p className="text-[9px] font-black text-white/20 uppercase tracking-[0.15em]">Total Likes</p>
                                         </div>
                                     </div>
                                 </div>
                             </div>
 
                             <div className="mt-auto space-y-6">
-                                <button className="w-full h-14 bg-white text-black rounded-full font-bold text-[11px] uppercase tracking-[0.15em] hover:bg-white/90 active:scale-[0.98] transition-all">Support Creator</button>
-                                <p className="text-center text-[9px] font-medium text-white/10 uppercase tracking-[0.4em]">Protocol v1.2</p>
+                                <button className="w-full h-14 bg-[#FF2D55] text-white rounded-full font-black text-[11px] uppercase tracking-[0.2em] shadow-2xl shadow-pink-500/10 hover:bg-[#FF0040] active:scale-[0.98] transition-all">Support Creator</button>
+                                <p className="text-center text-[9px] font-black text-white/10 uppercase tracking-[0.4em] italic">Protocol v2.0</p>
                             </div>
                         </motion.aside>
                     )}
@@ -178,44 +178,57 @@ export default function ForYouPage() {
                                                 onClick={() => handleVideoClick(index)}
                                                 className="group aspect-[9/12] bg-[#111] rounded-[32px] overflow-hidden relative border border-white/5 cursor-pointer shadow-2xl"
                                             >
-                                                {/* Thumbnail/Preview */}
+                                                {/* Thumbnail/Preview - Engineered Auto-Generation */}
                                                 <div className="absolute inset-0">
+                                                    {/* Static Thumbnail (Default) */}
                                                     <img
-                                                        src={`https://res.cloudinary.com/dqr6idmre/video/upload/c_fill,w_400,h_600,so_0/${post.cloudinaryPublicId}.jpg`}
-                                                        className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700 opacity-60 group-hover:opacity-100"
+                                                        src={post.cloudinaryPublicId
+                                                            ? `https://res.cloudinary.com/dqr6idmre/video/upload/c_fill,w_400,h_600,so_auto,q_auto,f_auto/${post.cloudinaryPublicId}.jpg`
+                                                            : post.videoUrl?.replace('.mp4', '.jpg') || '/placeholder-thumb.jpg'
+                                                        }
+                                                        className="w-full h-full object-cover transition-all duration-700 opacity-60 group-hover:opacity-0"
                                                         alt=""
                                                     />
-                                                    <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/80" />
+                                                    {/* Animated Preview (Hover) */}
+                                                    <img
+                                                        src={post.cloudinaryPublicId
+                                                            ? `https://res.cloudinary.com/dqr6idmre/video/upload/c_fill,w_400,h_600,e_loop,q_auto,f_webp/${post.cloudinaryPublicId}.webp`
+                                                            : ''
+                                                        }
+                                                        className="absolute inset-0 w-full h-full object-cover transition-opacity duration-500 opacity-0 group-hover:opacity-100"
+                                                        alt="preview"
+                                                    />
+                                                    <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black" />
                                                 </div>
 
                                                 {/* Top Badge: Views & Status */}
                                                 <div className="absolute top-4 left-4 right-4 flex items-center justify-between">
-                                                    <div className="flex items-center gap-2 px-3 py-1.5 bg-black/40 backdrop-blur-md rounded-full border border-white/10">
-                                                        <Eye className="w-3.5 h-3.5 text-white/60" />
-                                                        <span className="text-[10px] font-bold text-white">{post.engagement?.views || 10}</span>
+                                                    <div className="flex items-center gap-2 px-3 py-1.5 bg-[#111] rounded-full border border-white/5">
+                                                        <Eye className="w-3.5 h-3.5 text-[#FF2D55]" />
+                                                        <span className="text-[10px] font-black text-white">{post.engagement?.views || 10}</span>
                                                     </div>
-                                                    <div className="text-[10px] font-black text-white/20 tracking-tighter uppercase italic">VS</div>
+                                                    <div className="text-[10px] font-black text-[#FF2D55] tracking-tighter uppercase italic drop-shadow-lg">TANGO</div>
                                                 </div>
 
                                                 {/* Bottom Info */}
                                                 <div className="absolute bottom-5 left-5 right-5 flex items-center justify-between pointer-events-none">
                                                     <div className="flex items-center gap-3">
-                                                        <div className="w-8 h-8 rounded-full bg-white/10 border border-white/20 overflow-hidden">
+                                                        <div className="w-8 h-8 rounded-full bg-[#111] border border-white/10 overflow-hidden">
                                                             <img src={`https://ui-avatars.com/api/?name=${post.creatorId}&background=222&color=fff`} className="w-full h-full object-cover" alt="" />
                                                         </div>
-                                                        <span className="text-xs font-bold text-white group-hover:text-pink-100 transition-colors">
-                                                            {post.creatorId.slice(0, 8)}
+                                                        <span className="text-xs font-black text-white group-hover:text-[#FF2D55] transition-colors uppercase tracking-tight">
+                                                            {post.creatorId?.slice(0, 8) || 'user'}
                                                         </span>
                                                     </div>
                                                     <div className="flex items-center gap-1.5 text-white/80">
-                                                        <Gem className="w-3.5 h-3.5 text-white/40" />
-                                                        <span className="text-[10px] font-black">{post.engagement?.likes || '1.1M'}</span>
+                                                        <Gem className="w-3.5 h-3.5 text-[#FF2D55]" />
+                                                        <span className="text-[10px] font-black">{post.engagement?.likes || 0}</span>
                                                     </div>
                                                 </div>
 
                                                 {/* Play Button Overlay */}
                                                 <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                                    <div className="w-12 h-12 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center border border-white/40 scale-90 group-hover:scale-100 transition-transform duration-500">
+                                                    <div className="w-12 h-12 bg-[#FF2D55] rounded-full flex items-center justify-center shadow-2xl scale-90 group-hover:scale-100 transition-all duration-500">
                                                         <Play className="w-6 h-6 text-white fill-current" />
                                                     </div>
                                                 </div>
