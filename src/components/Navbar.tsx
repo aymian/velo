@@ -33,7 +33,7 @@ export function Navbar() {
     { name: "For You", icon: ThumbsUp, href: "/for-you" },
     { name: "Following", icon: Heart, href: "/following" },
     { name: "Explore", icon: Compass, href: "/explore" },
-    { name: "Chats", icon: MessageCircle, href: "/chats" },
+    { name: "Chats", icon: MessageCircle, href: "/chat" },
   ];
 
   useEffect(() => {

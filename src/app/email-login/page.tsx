@@ -8,7 +8,9 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import { Lock, ArrowRight, Loader2, AlertCircle, Eye, EyeOff, ArrowLeft } from "lucide-react";
 
-export default function EmailLoginPage() {
+import { Suspense } from "react";
+
+function EmailLoginContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
 
@@ -242,5 +244,17 @@ export default function EmailLoginPage() {
                 </div>
             </div>
         </div>
+    );
+}
+
+export default function EmailLoginPage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen bg-black flex items-center justify-center">
+                <Loader2 className="w-8 h-8 text-white/20 animate-spin" />
+            </div>
+        }>
+            <EmailLoginContent />
+        </Suspense>
     );
 }
