@@ -36,16 +36,26 @@ export interface User {
 // Post type
 export interface Post {
     id: string;
-    userId: string;
-    content: string;
-    mediaUrl?: string;
-    mediaType?: 'image' | 'video';
-    likes: number;
-    comments: number;
-    shares: number;
-    views: number;
-    createdAt: Date;
-    updatedAt: Date;
+    creatorId: string;
+    caption: string;
+    cloudinaryPublicId?: string;
+    videoUrl?: string; // secure_url from Cloudinary
+    status: 'processing' | 'ready' | 'error';
+    visibility: 'public' | 'subscribers' | 'locked';
+    price?: number;
+    previewDuration?: number;
+    blurEnabled?: boolean;
+    tags?: string[];
+    allowTipping?: boolean;
+    acceptRequests?: boolean;
+    engagement: {
+        likes: number;
+        comments: number;
+        shares: number;
+        views: number;
+    };
+    createdAt: any;
+    updatedAt: any;
 }
 
 // Comment type

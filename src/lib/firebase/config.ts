@@ -32,7 +32,6 @@ if (!getApps().length) {
     db = getFirestore(app);
     storage = getStorage(app);
 
-    // Analytics only works in browser
     if (typeof window !== 'undefined') {
         analytics = getAnalytics(app);
     }
@@ -41,10 +40,6 @@ if (!getApps().length) {
     auth = getAuth(app);
     db = getFirestore(app);
     storage = getStorage(app);
-
-    if (typeof window !== 'undefined') {
-        analytics = getAnalytics(app);
-    }
 }
 
 export { app, auth, db, storage, analytics };

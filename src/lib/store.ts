@@ -124,3 +124,101 @@ export const useNotificationStore = create<NotificationState>((set) => ({
         })),
     clearNotifications: () => set({ notifications: [] }),
 }));
+
+// Create Post state (for /create page)
+interface CreatePostState {
+    videoFile: File | null;
+    videoPreview: string | null;
+    caption: string;
+    visibility: 'public' | 'subscribers' | 'locked';
+    price: number;
+    previewDuration: number;
+    blurEnabled: boolean;
+    tags: string[];
+    isUploading: boolean;
+    uploadProgress: number;
+    allowTipping: boolean;
+    acceptRequests: boolean;
+
+    setVideoFile: (file: File | null, preview: string | null) => void;
+    setCaption: (caption: string) => void;
+    setVisibility: (visibility: CreatePostState['visibility']) => void;
+    setPrice: (price: number) => void;
+    setPreviewDuration: (duration: number) => void;
+    setBlurEnabled: (enabled: boolean) => void;
+    setTags: (tags: string[]) => void;
+    setUploading: (uploading: boolean) => void;
+    setUploadProgress: (progress: number) => void;
+    setAllowTipping: (allow: boolean) => void;
+    setAcceptRequests: (accept: boolean) => void;
+    reset: () => void;
+}
+
+export const useCreateStore = create<CreatePostState>((set) => ({
+    videoFile: null,
+    videoPreview: null,
+    caption: '',
+    visibility: 'public',
+    price: 10,
+    previewDuration: 5,
+    blurEnabled: false,
+    tags: [],
+    isUploading: false,
+    uploadProgress: 0,
+    allowTipping: true,
+    acceptRequests: false,
+
+    setVideoFile: (file, preview) => set({ videoFile: file, videoPreview: preview }),
+    setCaption: (caption) => set({ caption }),
+    setVisibility: (visibility) => set({ visibility }),
+    setPrice: (price) => set({ price }),
+    setPreviewDuration: (duration) => set({ previewDuration: duration }),
+    setBlurEnabled: (enabled) => set({ blurEnabled: enabled }),
+    setTags: (tags) => set({ tags }),
+    setUploading: (uploading) => set({ isUploading: uploading }),
+    setUploadProgress: (progress) => set({ uploadProgress: progress }),
+    setAllowTipping: (allow) => set({ allowTipping: allow }),
+    setAcceptRequests: (accept) => set({ acceptRequests: accept }),
+    reset: () => set({
+        videoFile: null,
+        videoPreview: null,
+        caption: '',
+        visibility: 'public',
+        price: 10,
+        previewDuration: 5,
+        blurEnabled: false,
+        tags: [],
+        isUploading: false,
+        uploadProgress: 0,
+        allowTipping: true,
+        acceptRequests: false,
+    }),
+}));
+
+// Search state
+interface SearchState {
+    recentSearches: string[];
+    addSearch: (query: string) => void;
+    removeSearch: (query: string) => void;
+    clearRecent: () => void;
+}
+
+export const useSearchStore = create<SearchState>()(
+    persist(
+        (set) => ({
+            recentSearches: [],
+            addSearch: (query) => set((state) => ({
+                recentSearches: [query, ...state.recentSearches.filter(q => q !== query)].slice(0, 10)
+            })),
+            removeSearch: (query) => set((state) => ({
+                recentSearches: state.recentSearches.filter(q => q !== query)
+            })),
+            clearRecent: () => set({ recentSearches: [] }),
+        }),
+        {
+            name: 'velo-search-storage',
+            storage: createJSONStorage(() => localStorage),
+        }
+    )
+);
+

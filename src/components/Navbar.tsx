@@ -30,10 +30,10 @@ export function Navbar() {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
 
   const navItems = [
-    { name: "For You", icon: ThumbsUp },
-    { name: "Following", icon: Heart },
-    { name: "Explore", icon: Compass },
-    { name: "Chats", icon: MessageCircle },
+    { name: "For You", icon: ThumbsUp, href: "/for-you" },
+    { name: "Following", icon: Heart, href: "/following" },
+    { name: "Explore", icon: Compass, href: "/explore" },
+    { name: "Chats", icon: MessageCircle, href: "/chats" },
   ];
 
   useEffect(() => {
@@ -71,31 +71,32 @@ export function Navbar() {
           const isHovered = hoveredItem === item.name;
 
           return (
-            <button
+            <Link
               key={item.name}
+              href={item.href}
               className="relative flex flex-col items-center gap-1 group p-2"
               onMouseEnter={() => setHoveredItem(item.name)}
               onMouseLeave={() => setHoveredItem(null)}
             >
               <div className={`transition-all duration-300 transform ${isHovered ? "-translate-y-1 scale-110" : ""}`}>
                 <Icon
-                  className={`w-7 h-7 transition-all duration-300 ${isHovered
-                    ? "text-[#ff4081] drop-shadow-[0_0_10px_rgba(255,64,129,0.5)] fill-[#ff4081]/10"
-                    : "text-white/80"
+                  className={`w-6 h-6 transition-all duration-300 ${isHovered
+                    ? "text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.3)]"
+                    : "text-white/40"
                     }`}
                   strokeWidth={isHovered ? 2.5 : 2}
                 />
               </div>
 
-              <span className={`text-[11px] font-bold tracking-wide transition-all duration-300 ${isHovered ? "text-white" : "text-white/60"
+              <span className={`text-[10px] font-bold tracking-[0.1em] uppercase transition-all duration-300 ${isHovered ? "text-white" : "text-white/20"
                 }`}>
                 {item.name}
               </span>
 
-              {/* Glowing dot indicator */}
-              <span className={`absolute -bottom-1 w-1.5 h-1.5 rounded-full bg-[#ff4081] shadow-[0_0_8px_#ff4081] transition-all duration-300 ${isHovered ? "opacity-100 scale-100" : "opacity-0 scale-0"
+              {/* Minimalist dot indicator */}
+              <span className={`absolute -bottom-1 w-1 h-1 rounded-full bg-white transition-all duration-300 ${isHovered ? "opacity-100 scale-100" : "opacity-0 scale-0"
                 }`} />
-            </button>
+            </Link>
           );
         })}
       </div>
@@ -107,30 +108,30 @@ export function Navbar() {
             {/* Search Trigger */}
             <button
               onClick={() => setIsSearchOpen(true)}
-              className="p-3 bg-white/5 hover:bg-white/10 backdrop-blur-md border border-white/10 rounded-full transition-all group"
+              className="p-2.5 bg-white/5 hover:bg-white/10 border border-white/5 rounded-full transition-all group"
             >
-              <Search className="w-5 h-5 text-white/60 group-hover:text-white group-hover:scale-110 transition-all" />
+              <Search className="w-4 h-4 text-white/40 group-hover:text-white transition-all" />
             </button>
 
             <div className="relative">
               <button
                 onClick={() => setShowProfileMenu(!showProfileMenu)}
-                className="flex items-center gap-2 p-1 pl-3 bg-white/5 hover:bg-white/10 backdrop-blur-md border border-white/10 rounded-full transition-all group"
+                className="flex items-center gap-3 p-1 pl-3 bg-white/5 hover:bg-white/10 border border-white/5 rounded-full transition-all group"
               >
-                <div className="flex flex-col items-end mr-1 hidden sm:flex">
-                  <span className="text-[11px] font-bold text-white leading-tight">{user?.displayName}</span>
-                  <span className="text-[9px] text-[#ff4081] font-bold tracking-widest uppercase flex items-center gap-1">
-                    <Crown className="w-2 h-2" /> PRO
+                <div className="flex flex-col items-end hidden sm:flex">
+                  <span className="text-[11px] font-bold text-white/80 leading-tight">{user?.displayName}</span>
+                  <span className="text-[9px] text-white/30 font-bold tracking-widest uppercase flex items-center gap-1">
+                    <Crown className="w-2 h-2 text-white/20" /> PLATINUM
                   </span>
                 </div>
-                <div className="relative ring-2 ring-[#ff4081]/30 group-hover:ring-[#ff4081] rounded-full transition-all overflow-hidden w-9 h-9">
+                <div className="relative border border-white/10 group-hover:border-white/30 rounded-full transition-all overflow-hidden w-8 h-8">
                   <img
-                    src={user?.photoURL || `https://ui-avatars.com/api/?name=${user?.displayName}&background=ff4081&color=fff`}
+                    src={user?.photoURL || `https://ui-avatars.com/api/?name=${user?.displayName}&background=333&color=fff`}
                     alt="Profile"
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-cover grayscale"
                   />
                 </div>
-                <ChevronDown className={`w-4 h-4 text-white/40 group-hover:text-white transition-all ${showProfileMenu ? 'rotate-180' : ''}`} />
+                <ChevronDown className={`w-3.5 h-3.5 text-white/20 group-hover:text-white transition-all ${showProfileMenu ? 'rotate-180' : ''}`} />
               </button>
 
               {/* Dropdown Menu */}
