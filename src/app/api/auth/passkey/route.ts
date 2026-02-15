@@ -56,7 +56,6 @@ export async function POST(request: NextRequest) {
             }
         }), {
             httpOnly: false,
-            secure: process.env.NODE_ENV === 'production',
             sameSite: 'lax',
             maxAge: 60 * 60 * 24 * 7,
             path: '/',
@@ -123,7 +122,6 @@ export async function PUT(request: NextRequest) {
             }
         }), {
             httpOnly: false,
-            secure: process.env.NODE_ENV === 'production',
             sameSite: 'lax',
             maxAge: 60 * 60 * 24 * 7,
             path: '/',

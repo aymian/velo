@@ -82,7 +82,6 @@ export async function PUT(request: NextRequest) {
 
             response.cookies.set('velo-session', 'demo-phone-session-token', {
                 httpOnly: true,
-                secure: process.env.NODE_ENV === 'production',
                 sameSite: 'lax',
                 maxAge: 60 * 60 * 24 * 7,
             });

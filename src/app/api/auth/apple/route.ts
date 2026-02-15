@@ -25,7 +25,6 @@ export async function GET(request: NextRequest) {
 
             response.cookies.set('velo-session', 'demo-apple-session-token', {
                 httpOnly: true,
-                secure: process.env.NODE_ENV === 'production',
                 sameSite: 'lax',
                 maxAge: 60 * 60 * 24 * 7,
             });
@@ -60,7 +59,6 @@ export async function POST(request: NextRequest) {
 
         response.cookies.set('velo-session', 'apple-session-token', {
             httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
             sameSite: 'lax',
             maxAge: 60 * 60 * 24 * 7,
         });

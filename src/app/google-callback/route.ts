@@ -117,7 +117,6 @@ export async function GET(request: NextRequest) {
             expiresAt: Date.now() + (tokens.expires_in * 1000),
         }), {
             httpOnly: false,
-            secure: process.env.NODE_ENV === 'production',
             sameSite: 'lax',
             maxAge: 60 * 60 * 24 * 7, // 7 days
             path: '/',
