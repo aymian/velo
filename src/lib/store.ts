@@ -17,7 +17,10 @@ interface AuthState {
     setUser: (user: AuthState['user']) => void;
     clearUser: () => void;
     setLoading: (loading: boolean) => void;
+    signUp: (email: string) => Promise<{ error: any }>;
 }
+
+import { supabase } from './supabase';
 
 export const useAuthStore = create<AuthState>()(
     persist(
@@ -28,6 +31,23 @@ export const useAuthStore = create<AuthState>()(
             setUser: (user) => set({ user, isAuthenticated: !!user, isLoading: false }),
             clearUser: () => set({ user: null, isAuthenticated: false, isLoading: false }),
             setLoading: (loading) => set({ isLoading: loading }),
+            signUp: async (email: string) => {
+                // Simple passwordless signup (magic link) as requested "confirm url"
+                // The user said "confirm url", usually implies Magic Link or Email Confirmation.
+                // We'll use magic link/OTP for simplicity unless password is required. 
+                // Assuming Magic Link for now based on "send confirm url".
+
+                const returnUrl = typeof window !== 'undefined' ? `${window.location.origin}/verify` : 'http://localhost:3000/verify';
+
+                const { error } = await supabase.auth.signInWithOtp({
+                    email,
+                    options: {
+                        emailRedirectTo: returnUrl,
+                    },
+                });
+
+                return { error };
+            }
         }),
         {
             name: 'velo-auth-storage',

@@ -41,15 +41,22 @@ export function LoginForm({
             return;
         }
         setIsLoading(true);
+        setError("");
         try {
-            // Simulate check
-            await new Promise((resolve) => setTimeout(resolve, 800));
-            const isNewUser = Math.random() > 0.5;
+            const { fetchSignInMethodsForEmail } = await import("firebase/auth");
+            const { auth } = await import("@/lib/firebase/config");
+
+            // 🚀 Real Email Check: Detect if user exists in Firebase
+            const signInMethods = await fetchSignInMethodsForEmail(auth, email);
+            const isNewUser = signInMethods.length === 0;
+
             const encodedEmail = encodeURIComponent(email);
             router.push(`/email-login?email=${encodedEmail}&type=${isNewUser}`);
-        } catch (err) {
-            setError("Something went wrong. Please try again.");
-            setIsLoading(false);
+        } catch (err: any) {
+            console.error("Email check error:", err);
+            // Fallback: If check fails (e.g. security policy), default to login flow
+            const encodedEmail = encodeURIComponent(email);
+            router.push(`/email-login?email=${encodedEmail}&type=false`);
         }
     };
 
@@ -70,6 +77,8 @@ export function LoginForm({
             const userRef = doc(db, COLLECTIONS.USERS, user.uid);
             const userSnap = await getDoc(userRef);
 
+            let targetRoute = '/discover';
+
             const userData: any = {
                 uid: user.uid,
                 email: user.email,
@@ -80,10 +89,22 @@ export function LoginForm({
             };
 
             if (!userSnap.exists()) {
+                // New User
                 userData.createdAt = serverTimestamp();
                 userData.bio = "";
                 userData.role = "user";
                 userData.stats = { followers: 0, following: 0, impact: 0 };
+                userData.onboardingCompleted = false;
+
+                targetRoute = '/onboarding';
+            } else {
+                // Existing User
+                const data = userSnap.data();
+                if (data?.onboardingCompleted) {
+                    targetRoute = '/discover';
+                } else {
+                    targetRoute = '/onboarding';
+                }
             }
 
             await setDoc(userRef, userData, { merge: true });
@@ -95,7 +116,7 @@ export function LoginForm({
                 photoURL: user.photoURL
             });
 
-            router.push('/profile');
+            router.push(targetRoute);
         } catch (err: any) {
             console.error("Login Error:", err);
             setError(err.message || "Failed to authenticate with Google");
@@ -140,24 +161,24 @@ export function LoginForm({
                             <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
                         </svg>
                     )}
-                    <span className="text-base tracking-wide">Continue with Google</span>
+                    <span className="text-base tracking-wide">Login with Google</span>
                 </button>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <button onClick={() => { }} className="bg-black/40 hover:bg-black/60 backdrop-blur-md border border-white/10 hover:border-white/30 text-white h-14 rounded-full flex items-center justify-center gap-3 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] group">
                         <svg className="w-5 h-5 text-white/90 group-hover:text-white transition-colors" fill="currentColor" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" /></svg>
-                        <span className="text-sm font-medium">Continue with X</span>
+                        <span className="text-sm font-medium">Login with X</span>
                     </button>
                     <button onClick={() => { }} className="bg-black/40 hover:bg-black/60 backdrop-blur-md border border-white/10 hover:border-white/30 text-white h-14 rounded-full flex items-center justify-center gap-3 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] group">
                         <svg className="w-5 h-5 text-white/90 group-hover:text-white transition-colors" viewBox="0 0 24 24" fill="currentColor"><path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.78 1.18-.19 2.31-.89 3.51-.84 1.54.06 2.7.9 3.4 1.9-3.06 1.83-2.47 5.76.62 7.07-.63 1.61-1.54 3.2-2.61 4.06zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.54 4.33-3.74 4.25z" /></svg>
-                        <span className="text-sm font-medium">Continue with Apple</span>
+                        <span className="text-sm font-medium">Login with Apple</span>
                     </button>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <button onClick={() => router.push('/phone-login')} className="bg-black/40 hover:bg-black/60 backdrop-blur-md border border-white/10 hover:border-white/30 text-white h-14 rounded-full flex items-center justify-center gap-3 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] group">
                         <Smartphone className="w-5 h-5 text-white/90 group-hover:text-white transition-colors" />
-                        <span className="text-sm font-medium">Continue with Phone</span>
+                        <span className="text-sm font-medium">Login with Phone</span>
                     </button>
                     <button onClick={() => router.push('/passkey-login')} className="bg-black/40 hover:bg-black/60 backdrop-blur-md border border-white/10 hover:border-white/30 text-white h-14 rounded-full flex items-center justify-center gap-3 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] group">
                         <Fingerprint className="w-5 h-5 text-white/90 group-hover:text-white transition-colors" />

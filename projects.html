@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Projects | Ishimwe Yves Ian</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+
+<body class="page-projects">
+    <div class="glow-orb"></div>
+
+    <nav>
+        <a href="pr.html" class="nav-brand">
+            <i data-lucide="zap"></i>
+            <span>Vello</span>
+        </a>
+        <ul class="nav-links">
+            <li><a href="pr.html">Home</a></li>
+            <li><a href="about.html">About</a></li>
+            <li><a href="projects.html" class="active">Projects</a></li>
+            <li><a href="contact.html">Contact</a></li>
+        </ul>
+        <div class="nav-actions">
+            <a href="#" class="btn-text">Login</a>
+            <a href="#" class="btn btn-primary btn-small">Get Started</a>
+        </div>
+    </nav>
+
+    <main class="page-container">
+        <section id="projects">
+            <span class="badge">Portfolio</span>
+            <h2>Masterpiece Projects</h2>
+            <div class="project-grid">
+                <div class="project-card">
+                    <div class="project-icon"><i data-lucide="layers"></i></div>
+                    <h3>Next.js Fullstack Engine</h3>
+                    <p>A flagship enterprise solution designed for massive traffic and ultra-low latency.</p>
+                    <span class="tech-tag">React</span> <span class="tech-tag">Next.js</span>
+                </div>
+                <div class="project-card">
+                    <div class="project-icon"><i data-lucide="zap"></i></div>
+                    <h3>Social Growth Automation</h3>
+                    <p>Sophisticated integration tools for TikTok and social platforms using Node.js.</p>
+                    <span class="tech-tag">Automation</span> <span class="tech-tag">API</span>
+                </div>
+                <div class="project-card">
+                    <div class="project-icon"><i data-lucide="shield-check"></i></div>
+                    <h3>Secure Payment Gateway</h3>
+                    <p>A robust, security-first implementation for digital commerce and fintech startups.</p>
+                    <span class="tech-tag">Security</span> <span class="tech-tag">Fintech</span>
+                </div>
+                <div class="project-card">
+                    <div class="project-icon"><i data-lucide="globe"></i></div>
+                    <h3>Globla SaaS Dashboard</h3>
+                    <p>A real-time data visualization dashboard for monitoring global cloud infrastructure.</p>
+                    <span class="tech-tag">D3.js</span> <span class="tech-tag">SaaS</span>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; 2026 Ishimwe Yves Ian. All rights reserved.</p>
+    </footer>
+
+    <script>
+        lucide.createIcons();
+        document.querySelector('section').classList.add('visible');
+    </script>
+</body>
+
+</html>

@@ -7,6 +7,9 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import { Lock, ArrowRight, Loader2, AlertCircle, Eye, EyeOff, ArrowLeft } from "lucide-react";
+import { auth } from "@/lib/firebase/config";
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from "firebase/auth";
+import { useAuthStore } from "@/lib/store";
 
 import { Suspense } from "react";
 
@@ -48,17 +51,38 @@ function EmailLoginContent() {
         setError("");
 
         try {
-            // Simulate API call
-            await new Promise((resolve) => setTimeout(resolve, 1500));
+            const { setUser } = useAuthStore.getState();
 
-            // Redirect to onboarding or home
             if (isNewUser) {
+                const result = await createUserWithEmailAndPassword(auth, email, password);
+                setUser({
+                    uid: result.user.uid,
+                    email: result.user.email,
+                    displayName: result.user.displayName,
+                    photoURL: result.user.photoURL,
+                });
                 router.push("/onboarding");
             } else {
+                const result = await signInWithEmailAndPassword(auth, email, password);
+                setUser({
+                    uid: result.user.uid,
+                    email: result.user.email,
+                    displayName: result.user.displayName,
+                    photoURL: result.user.photoURL,
+                });
                 router.push("/");
             }
-        } catch (err) {
-            setError("Authentication failed. Please try again.");
+        } catch (err: any) {
+            console.error("Auth error:", err.code, err.message);
+            if (err.code === "auth/wrong-password" || err.code === "auth/invalid-credential") {
+                setError("Incorrect password. Please try again.");
+            } else if (err.code === "auth/user-not-found") {
+                setError("User not found. Please check your email.");
+            } else if (err.code === "auth/email-already-in-use") {
+                setError("Email already in use. Try logging in instead.");
+            } else {
+                setError("Authentication failed. " + (err.message || "Please try again."));
+            }
             setIsLoading(false);
         }
     };

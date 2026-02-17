@@ -81,7 +81,9 @@ export function UserDropdown({ user, onLogout, onClose }: UserDropdownProps) {
                             <img src={user?.photoURL || `https://ui-avatars.com/api/?name=${user?.displayName}&background=ff4081&color=fff`} alt="" className="w-full h-full object-cover" />
                         </div>
                         <div className="flex flex-col">
-                            <h2 className="text-[17px] font-bold text-white leading-tight">{user?.displayName || "Funny Badger"}</h2>
+                            <h2 className="text-[17px] font-bold text-white leading-tight">
+                                {user?.displayName || user?.email?.split('@')[0] || "User"}
+                            </h2>
                             <div className="flex items-center gap-3 mt-1">
                                 <div className="flex items-center gap-1.5">
                                     <Gem className="w-3.5 h-3.5 text-white/40" />
@@ -110,8 +112,17 @@ export function UserDropdown({ user, onLogout, onClose }: UserDropdownProps) {
                     label="Agency Program"
                     onClick={() => { router.push('/agency-program'); onClose(); }}
                 />
-                <MenuItem icon={Crown} label="VIP Loyalty" />
-                <MenuItem icon={Store} label="MyVIP Store" hasNotification={true} />
+                <MenuItem
+                    icon={Crown}
+                    label="VIP Loyalty"
+                    onClick={() => { router.push('/vip-loyalty'); onClose(); }}
+                />
+                <MenuItem
+                    icon={Store}
+                    label="MyVIP Store"
+                    hasNotification={true}
+                    onClick={() => { router.push('/vip-store'); onClose(); }}
+                />
                 <MenuItem icon={PlayCircle} label="How to Veeloo" hasNotification={true} />
                 <MenuItem icon={Gavel} label="Veeloo Cards Auction" />
 
@@ -127,7 +138,7 @@ export function UserDropdown({ user, onLogout, onClose }: UserDropdownProps) {
                 <SectionHeader label="Settings" />
                 <MenuItem icon={Headphones} label="Customer Support" />
                 <MenuItem icon={Smartphone} label="Get Veeloo App" subtitle="Stay connected with your friends anywhere and anytime!" hasNotification={true} />
-                <MenuItem icon={Settings2} label="Settings" />
+                <MenuItem icon={Settings2} label="Settings" onClick={() => { router.push('/edit-profile'); onClose(); }} />
 
                 <div className="flex items-center justify-between px-4 py-3 hover:bg-white/5 transition-all group">
                     <div className="flex items-center gap-4">
