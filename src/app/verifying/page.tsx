@@ -1,12 +1,12 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import { Loader2, CheckCircle2 } from "lucide-react";
 import { VeloLogo } from "@/components/VeloLogo";
 
-export default function VerifyingPage() {
+function VerifyingContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const [step, setStep] = useState<"loading" | "success">("loading");
@@ -194,5 +194,18 @@ export default function VerifyingPage() {
                 </p>
             </div>
         </div>
+    );
+}
+
+export default function VerifyingPage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen bg-black flex flex-col items-center justify-center p-6 text-white font-sans uppercase tracking-[0.2em] text-[10px] font-black">
+                <Loader2 className="w-8 h-8 animate-spin text-white mb-4" />
+                <span>Synchronizing Session...</span>
+            </div>
+        }>
+            <VerifyingContent />
+        </Suspense>
     );
 }

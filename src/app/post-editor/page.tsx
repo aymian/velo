@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -93,7 +93,7 @@ const Toggle = ({ active, onClick }: { active: boolean; onClick: () => void }) =
     </button>
 );
 
-export default function PostEditorPage() {
+function PostEditorContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const { user } = useAuthStore();
@@ -401,8 +401,8 @@ export default function PostEditorPage() {
                                         key={type.id}
                                         onClick={() => setPostType(type.id)}
                                         className={`flex flex-col items-center gap-4 p-6 rounded-3xl border transition-all ${postType === type.id
-                                                ? "bg-white/5 border-white/20 text-white"
-                                                : "bg-black border-white/5 text-white/20 hover:border-white/10"
+                                            ? "bg-white/5 border-white/20 text-white"
+                                            : "bg-black border-white/5 text-white/20 hover:border-white/10"
                                             }`}
                                     >
                                         <type.icon className={`w-6 h-6 ${postType === type.id ? "text-white" : "opacity-30"}`} />
@@ -583,8 +583,8 @@ export default function PostEditorPage() {
                             onClick={handlePublish}
                             disabled={!localCaption || isUploading}
                             className={`px-14 h-16 rounded-full font-black text-[15px] uppercase tracking-[0.2em] transition-all shadow-[0_12px_60px_rgba(255,45,85,0.4)] flex items-center gap-4 ${localCaption && !isUploading
-                                    ? "bg-[#FF2D55] text-white hover:scale-[1.05] active:scale-[0.95]"
-                                    : "bg-white/5 text-white/20 cursor-not-allowed shadow-none"
+                                ? "bg-[#FF2D55] text-white hover:scale-[1.05] active:scale-[0.95]"
+                                : "bg-white/5 text-white/20 cursor-not-allowed shadow-none"
                                 }`}
                         >
                             {isUploading ? <Loader2 className="w-6 h-6 animate-spin" /> : (
@@ -613,5 +613,20 @@ export default function PostEditorPage() {
                 )}
             </AnimatePresence>
         </div>
+    );
+}
+
+export default function PostEditorPage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen bg-black flex items-center justify-center p-6 text-white font-sans uppercase tracking-[0.2em] text-[10px] font-black">
+                <div className="flex flex-col items-center gap-4">
+                    <Loader2 className="w-8 h-8 animate-spin text-[#FF2D55]" />
+                    <span>Synchronizing Context...</span>
+                </div>
+            </div>
+        }>
+            <PostEditorContent />
+        </Suspense>
     );
 }
