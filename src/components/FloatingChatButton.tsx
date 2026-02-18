@@ -12,7 +12,7 @@ export function FloatingChatButton() {
         <div className="fixed bottom-6 right-6 z-[100]">
             <AnimatePresence>
                 {isOpen && (
-                    <ChatModal onClose={() => setIsOpen(false)} />
+                    <ChatModal isOpen={isOpen} onClose={() => setIsOpen(false)} />
                 )}
             </AnimatePresence>
 
