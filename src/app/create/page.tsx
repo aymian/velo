@@ -29,7 +29,7 @@ import { useQueryClient } from "@tanstack/react-query";
 export default function CreatePostPage() {
     const router = useRouter();
     const { user } = useAuthStore();
-    const { caption, videoPreview, setVideoFile } = useCreateStore();
+    const { caption, videoPreview, videoFile, setVideoFile } = useCreateStore();
     const setCaption = useCreateStore((state) => state.setCaption);
 
     const fileInputRef = useRef<HTMLInputElement>(null);
