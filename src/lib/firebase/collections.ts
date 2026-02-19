@@ -24,6 +24,7 @@ export interface User {
     username?: string;
     followers?: number;
     following?: number;
+    earned?: number;
     verified?: boolean;
     createdAt: Date;
     updatedAt: Date;

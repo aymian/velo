@@ -11,6 +11,7 @@ interface AuthState {
         email: string | null;
         displayName: string | null;
         photoURL: string | null;
+        username?: string;
     } | null;
     isAuthenticated: boolean;
     isLoading: boolean;
@@ -189,7 +190,7 @@ export const useCreateStore = create<CreatePostState>((set) => ({
     acceptRequests: false,
 
     setVideoFile: (file, preview) => set({ videoFile: file, videoPreview: preview }),
-    setCaption: (caption) => set({ caption }),
+    setCaption: (caption) => set({ caption: caption ?? '' }),
     setVisibility: (visibility) => set({ visibility }),
     setPrice: (price) => set({ price }),
     setPreviewDuration: (duration) => set({ previewDuration: duration }),
@@ -213,6 +214,32 @@ export const useCreateStore = create<CreatePostState>((set) => ({
         allowTipping: true,
         acceptRequests: false,
     }),
+}));
+
+// Call state (WebRTC)
+export type CallStatus = "idle" | "calling" | "ringing" | "connected" | "ended";
+
+interface CallState {
+    status: CallStatus;
+    mode: "video" | "audio" | null;
+    channelId: string | null;   // Firestore signaling doc id (conversationId)
+    callerId: string | null;    // uid of the person who initiated
+    peerId: string | null;      // uid of the other person
+    setCall: (params: { mode: "video" | "audio"; channelId: string; callerId: string; peerId: string }) => void;
+    setStatus: (status: CallStatus) => void;
+    endCall: () => void;
+}
+
+export const useCallStore = create<CallState>()((set) => ({
+    status: "idle",
+    mode: null,
+    channelId: null,
+    callerId: null,
+    peerId: null,
+    setCall: ({ mode, channelId, callerId, peerId }) =>
+        set({ mode, channelId, callerId, peerId, status: "calling" }),
+    setStatus: (status) => set({ status }),
+    endCall: () => set({ status: "idle", mode: null, channelId: null, callerId: null, peerId: null }),
 }));
 
 // Search state

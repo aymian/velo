@@ -55,41 +55,34 @@ import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { COLLECTIONS } from "@/lib/firebase/collections";
 import { Navbar } from "@/components/Navbar";
 import { useQueryClient } from "@tanstack/react-query";
+import { MentionTextarea } from "@/components/MentionTextarea";
+import { searchUsers } from "@/lib/firebase/helpers";
 import dayjs from "dayjs";
+
+
 
 // --- Components ---
 
-const SectionHeader = ({ title, icon: Icon, description }: any) => (
-    <div className="flex items-center gap-3 mb-6">
-        <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center border border-white/5">
-            <Icon className="w-4 h-4 text-white" />
-        </div>
-        <div>
-            <h3 className="text-[15px] font-bold text-white tracking-tight">{title}</h3>
-            {description && <p className="text-[10px] text-white/30 uppercase tracking-widest font-bold">{description}</p>}
-        </div>
+const SectionHeader = ({ title, icon: Icon }: any) => (
+    <div className="flex items-center gap-2.5 mb-5">
+        <Icon className="w-4 h-4 text-white/30" />
+        <h3 className="text-[14px] font-semibold text-white/80">{title}</h3>
     </div>
 );
 
-const ControlRow = ({ label, icon: Icon, children, description }: any) => (
-    <div className="flex items-center justify-between py-4 border-b border-white/5 last:border-0 hover:bg-white/[0.02] px-2 -mx-2 rounded-xl transition-colors">
-        <div className="flex items-center gap-3">
-            {Icon && <Icon className="w-4 h-4 text-white/30" />}
-            <div>
-                <p className="text-[14px] font-semibold text-white/80">{label}</p>
-                {description && <p className="text-[11px] text-white/20">{description}</p>}
-            </div>
+const ControlRow = ({ label, icon: Icon, children }: any) => (
+    <div className="flex items-center justify-between py-3.5 border-b border-white/[0.05] last:border-0">
+        <div className="flex items-center gap-2.5">
+            {Icon && <Icon className="w-3.5 h-3.5 text-white/25" />}
+            <p className="text-[13px] text-white/60">{label}</p>
         </div>
         <div>{children}</div>
     </div>
 );
 
 const Toggle = ({ active, onClick }: { active: boolean; onClick: () => void }) => (
-    <button
-        onClick={onClick}
-        className={`w-10 h-5 rounded-full transition-all relative ${active ? "bg-[#FF2D55]" : "bg-[#27272A]"}`}
-    >
-        <div className={`absolute top-1 w-3 h-3 rounded-full bg-white transition-all ${active ? "left-6" : "left-1"}`} />
+    <button onClick={onClick} className={`w-9 h-5 rounded-full transition-colors relative ${active ? "bg-white/80" : "bg-white/10"}`}>
+        <div className={`absolute top-[3px] w-3.5 h-3.5 rounded-full bg-[#0d0d0d] transition-all ${active ? "left-[18px]" : "left-[3px]"}`} />
     </button>
 );
 
@@ -108,8 +101,11 @@ function PostEditorContent() {
         isUploading,
         uploadProgress,
         setCaption,
+        setVideoFile,
         reset
     } = useCreateStore();
+
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     // Locally override from URL if present
     const [localSource, setLocalSource] = useState(videoPreview);
@@ -124,6 +120,13 @@ function PostEditorContent() {
             setCaption(captionParam);
         }
     }, [searchParams]);
+
+    const handleReplace = (file: File) => {
+        if (!file.type.startsWith("image/") && !file.type.startsWith("video/") && !file.type.startsWith("audio/")) return;
+        const preview = URL.createObjectURL(file);
+        setVideoFile(file, preview);
+        setLocalSource(preview);
+    };
 
     // --- State ---
     const [postType, setPostType] = useState('free'); // free, premium, followers, private
@@ -149,6 +152,15 @@ function PostEditorContent() {
     const [location, setLocation] = useState("");
     const [externalLink, setExternalLink] = useState("");
 
+    const fetchUsers = async (query: string) => {
+        if (!query) return [];
+        const users = await searchUsers(query);
+        return users.map((u: any) => ({
+            id: u.uid,
+            display: u.username || u.displayName || "unknown",
+        }));
+    };
+
     const handlePublish = async () => {
         if (!localCaption || isUploading || !user) return;
         const setUploading = useCreateStore.getState().setUploading;
@@ -166,9 +178,11 @@ function PostEditorContent() {
                 formData.append('file', videoFile);
                 formData.append('upload_preset', process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || 'ml_default');
 
+                const resourceType = videoFile.type.startsWith('image/') ? 'image' : 'video';
+
                 const axios = (await import('axios')).default;
                 const response = await axios.post(
-                    `https://api.cloudinary.com/v1_1/${cloudName}/video/upload`,
+                    `https://api.cloudinary.com/v1_1/${cloudName}/${resourceType}/upload`,
                     formData,
                     {
                         onUploadProgress: (p: any) => setUploadProgress(Math.round((p.loaded * 100) / p.total))
@@ -178,6 +192,7 @@ function PostEditorContent() {
                 if (response.data) {
                     cloudinaryData.cloudinaryPublicId = response.data.public_id;
                     cloudinaryData.videoUrl = response.data.secure_url;
+                    cloudinaryData.resourceType = resourceType;
                     cloudinaryData.status = 'ready';
                 }
             }
@@ -210,38 +225,32 @@ function PostEditorContent() {
 
     if (!localCaption && !videoFile && !searchParams.get('source')) {
         return (
-            <div className="min-h-screen bg-black flex items-center justify-center p-6">
-                <div className="text-center space-y-6">
-                    <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center mx-auto border border-white/10">
-                        <EyeOff className="w-8 h-8 text-white/10" />
-                    </div>
-                    <div>
-                        <p className="text-white/40 font-bold uppercase tracking-[0.2em] text-[10px] mb-2">No Content Data</p>
-                        <h2 className="text-xl font-bold text-white mb-6">Start from the beginning.</h2>
-                        <button onClick={() => router.push('/create')} className="px-8 py-3 bg-[#FF2D55] text-white font-bold rounded-full hover:scale-105 active:scale-95 transition-all">
-                            Create Content
-                        </button>
-                    </div>
+            <div className="min-h-screen bg-[#0d0d0d] flex items-center justify-center p-6">
+                <div className="text-center space-y-4">
+                    <p className="text-sm text-white/30">Nothing to edit yet.</p>
+                    <button onClick={() => router.push('/create')} className="px-6 py-2.5 bg-white/[0.06] border border-white/[0.08] text-sm text-white/60 hover:text-white rounded-xl transition-colors">
+                        Start creating
+                    </button>
                 </div>
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-black text-white selection:bg-[#FF2D55]/30 flex flex-col pt-20 font-sans">
+        <div className="min-h-screen bg-[#0d0d0d] text-white flex flex-col pt-20 font-sans">
             <Navbar />
 
             <main className="flex-1 w-full max-w-7xl mx-auto px-4 md:px-8 py-10 pb-40">
                 <div className="flex flex-col lg:flex-row gap-8 items-start">
 
-                    {/* --- 1️⃣ MEDIA PREVIEW SECTION (LEFT) --- */}
-                    <div className="w-full lg:w-[420px] shrink-0 space-y-6">
-                        <div className="bg-[#0A0A0A] border border-white/10 rounded-[2rem] overflow-hidden shadow-2xl">
-                            <div className="p-5 border-b border-white/5 flex items-center justify-between">
-                                <span className="text-[11px] font-black uppercase text-white/30 tracking-widest">Visual Preview</span>
-                                <div className="flex gap-2">
-                                    <button className="p-2 hover:bg-white/5 rounded-lg transition-all text-white/40 hover:text-white"><Crop className="w-4 h-4" /></button>
-                                    <button className="p-2 hover:bg-white/5 rounded-lg transition-all text-white/40 hover:text-white"><RotateCw className="w-4 h-4" /></button>
+                    {/* --- MEDIA PREVIEW (LEFT) --- */}
+                    <div className="w-full lg:w-[360px] shrink-0 space-y-4">
+                        <div className="bg-[#111] border border-white/[0.06] rounded-2xl overflow-hidden">
+                            <div className="px-4 py-3 border-b border-white/[0.05] flex items-center justify-between">
+                                <span className="text-[12px] text-white/40">Preview</span>
+                                <div className="flex gap-1">
+                                    <button className="p-1.5 hover:bg-white/5 rounded-lg transition-colors text-white/30 hover:text-white/70"><Crop className="w-3.5 h-3.5" /></button>
+                                    <button className="p-1.5 hover:bg-white/5 rounded-lg transition-colors text-white/30 hover:text-white/70"><RotateCw className="w-3.5 h-3.5" /></button>
                                 </div>
                             </div>
 
@@ -250,6 +259,14 @@ function PostEditorContent() {
                                     <>
                                         {videoFile?.type.startsWith('image/') ? (
                                             <img src={localSource} className={`w-full h-full object-cover transition-all duration-500 ${shouldBlurPreview ? "blur-2xl opacity-50" : "opacity-90"}`} alt="Preview" />
+                                        ) : videoFile?.type.startsWith('audio/') ? (
+                                            <div className="w-full h-full flex flex-col items-center justify-center bg-white/[0.03] gap-4">
+                                                <div className="w-20 h-20 rounded-full bg-white/[0.05] flex items-center justify-center">
+                                                    <span className="text-4xl">🎵</span>
+                                                </div>
+                                                <p className="text-[14px] text-white/60 font-medium px-6 text-center">{videoFile.name}</p>
+                                                <audio src={localSource} controls className="w-[80%] h-10 opacity-50 hover:opacity-100 transition-opacity" />
+                                            </div>
                                         ) : (
                                             <video src={localSource} className={`w-full h-full object-cover transition-all duration-500 ${shouldBlurPreview ? "blur-2xl opacity-50" : "opacity-90"}`} autoPlay loop muted playsInline />
                                         )}
@@ -264,50 +281,45 @@ function PostEditorContent() {
                                 <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-black/20" />
 
                                 <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-3 opacity-0 group-hover:opacity-100 transition-all">
-                                    <button className="px-5 py-2.5 bg-white/10 backdrop-blur-md border border-white/20 rounded-full flex items-center gap-2 text-xs font-bold hover:bg-white/20">
+                                    <button
+                                        onClick={() => fileInputRef.current?.click()}
+                                        className="px-5 py-2.5 bg-white/10 backdrop-blur-md border border-white/20 rounded-full flex items-center gap-2 text-xs font-bold hover:bg-white/20"
+                                    >
                                         <RefreshCw className="w-3.5 h-3.5" />
                                         Replace
                                     </button>
+                                    <input
+                                        ref={fileInputRef}
+                                        type="file"
+                                        accept="video/*,image/*,audio/*"
+                                        className="hidden"
+                                        onChange={(e) => e.target.files?.[0] && handleReplace(e.target.files[0])}
+                                    />
                                 </div>
                             </div>
 
-                            <div className="p-6 space-y-5">
-                                <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-3">
-                                        <Droplets className="w-4 h-4 text-white/30" />
-                                        <span className="text-[14px] font-semibold text-white/80">Blur Preview</span>
-                                    </div>
+                            <div className="px-4 py-3 space-y-1">
+                                <ControlRow label="Blur preview" icon={Droplets}>
                                     <Toggle active={shouldBlurPreview} onClick={() => setShouldBlurPreview(!shouldBlurPreview)} />
-                                </div>
-                                <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-3">
-                                        <ImageIcon className="w-4 h-4 text-white/30" />
-                                        <span className="text-[14px] font-semibold text-white/80">Add Watermark</span>
-                                    </div>
+                                </ControlRow>
+                                <ControlRow label="Add watermark" icon={ImageIcon}>
                                     <Toggle active={addWatermark} onClick={() => setAddWatermark(!addWatermark)} />
-                                </div>
+                                </ControlRow>
                             </div>
                         </div>
 
                         {/* Forecast */}
-                        <div className="bg-[#0A0A0A] border border-white/10 rounded-[2rem] p-8 space-y-6 shadow-xl">
-                            <SectionHeader title="Transmission Forecast" icon={BarChart3} description="Simulated Engagement" />
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="p-5 bg-black/40 rounded-2xl border border-white/5">
-                                    <p className="text-[10px] font-bold text-white/20 uppercase tracking-widest mb-1.5">Est. Reach</p>
-                                    <div className="text-xl font-bold text-white tracking-tight flex items-center gap-2">
-                                        120–350
-                                        <ArrowUpRight className="w-4 h-4 text-green-500" />
-                                    </div>
+                        <div className="bg-[#111] border border-white/[0.06] rounded-2xl p-5">
+                            <SectionHeader title="Estimated reach" icon={BarChart3} />
+                            <div className="grid grid-cols-2 gap-3">
+                                <div className="p-4 bg-[#0d0d0d] rounded-xl border border-white/[0.05]">
+                                    <p className="text-[11px] text-white/30 mb-1">Est. reach</p>
+                                    <p className="text-[15px] font-semibold text-white">120–350</p>
                                 </div>
-                                <div className="p-5 bg-black/40 rounded-2xl border border-white/5">
-                                    <p className="text-[10px] font-bold text-white/20 uppercase tracking-widest mb-1.5">Eng. Score</p>
-                                    <div className="text-xl font-bold text-white tracking-tight">Medium</div>
+                                <div className="p-4 bg-[#0d0d0d] rounded-xl border border-white/[0.05]">
+                                    <p className="text-[11px] text-white/30 mb-1">Engagement</p>
+                                    <p className="text-[15px] font-semibold text-white">Medium</p>
                                 </div>
-                            </div>
-                            <div className="flex items-center justify-between px-2 pt-2">
-                                <span className="text-[11px] font-black text-white/20 uppercase tracking-widest">Trending Probability</span>
-                                <span className="text-[11px] font-black text-[#FF2D55] uppercase tracking-widest">High</span>
                             </div>
                         </div>
                     </div>
@@ -316,239 +328,141 @@ function PostEditorContent() {
                     <div className="flex-1 space-y-8">
 
                         {/* Caption Hub */}
-                        <div className="bg-[#0A0A0A] border border-white/10 rounded-[2rem] p-10 shadow-xl">
-                            <SectionHeader title="Content & Context" icon={AlignLeft} description="Primary Narrative" />
+                        <div className="bg-[#111] border border-white/[0.06] rounded-2xl p-6">
+                            <SectionHeader title="Caption" icon={AlignLeft} />
 
                             <div className="space-y-8">
                                 <div className="space-y-3">
                                     <div className="flex justify-between items-center">
-                                        <Label.Root className="text-[11px] font-black uppercase text-white/20 tracking-[0.2em] px-1">Caption</Label.Root>
-                                        <span className="text-[10px] text-white/20 font-black uppercase tracking-widest">{localCaption?.length || 0}/2200</span>
+                                        <span className="text-[11px] text-white/30">Caption</span>
+                                        <span className="text-[11px] text-white/20 tabular-nums">{localCaption?.length || 0}/2200</span>
                                     </div>
-                                    <textarea
-                                        value={localCaption}
-                                        onChange={(e) => setLocalCaption(e.target.value)}
-                                        className="w-full bg-black border border-white/10 rounded-3xl p-6 text-[16px] text-white/90 outline-none focus:border-white/20 transition-all resize-none min-h-[160px] leading-relaxed placeholder:text-white/10"
-                                        placeholder="What's the narrative?"
-                                    />
-                                    <div className="flex items-center gap-6 px-3 pt-2 font-black">
-                                        <button className="text-[11px] text-[#FF2D55] uppercase tracking-widest flex items-center gap-2 hover:opacity-80 transition-opacity">
-                                            <Hash className="w-4 h-4" strokeWidth={3} /> Hashtag
+                                    <div className="relative group/mention">
+                                        <MentionTextarea
+                                            value={localCaption ?? ""}
+                                            onChange={(val) => setLocalCaption(val)}
+                                            placeholder="Write a caption…"
+                                            fetchUsers={fetchUsers}
+                                            minHeight={120}
+                                        />
+                                    </div>
+                                    <div className="flex items-center gap-4 px-1">
+                                        <button className="text-[12px] text-white/30 hover:text-white/60 flex items-center gap-1.5 transition-colors">
+                                            <Hash className="w-3.5 h-3.5" /> Hashtag
                                         </button>
-                                        <button className="text-[11px] text-[#FF2D55] uppercase tracking-widest flex items-center gap-2 hover:opacity-80 transition-opacity">
-                                            <AtSign className="w-4 h-4" strokeWidth={3} /> Mention
-                                        </button>
-                                        <button className="text-[11px] text-white/20 uppercase tracking-widest flex items-center gap-2 hover:opacity-80 transition-opacity ml-auto">
-                                            <Smile className="w-4 h-4" /> Emoji
+                                        <button className="text-[12px] text-white/30 hover:text-white/60 flex items-center gap-1.5 transition-colors">
+                                            <AtSign className="w-3.5 h-3.5" /> Mention
                                         </button>
                                     </div>
                                 </div>
 
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                    <div className="space-y-3">
-                                        <Label.Root className="text-[11px] font-black uppercase text-white/20 tracking-[0.2em] px-1">Tags (Max 10)</Label.Root>
-                                        <input
-                                            type="text"
-                                            value={tags}
-                                            onChange={(e) => setTags(e.target.value)}
-                                            placeholder="Split by commas..."
-                                            className="w-full h-14 bg-black border border-white/10 rounded-2xl px-6 text-[15px] outline-none focus:border-white/20 transition-all placeholder:text-white/10"
-                                        />
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <span className="text-[11px] text-white/30 px-1">Tags</span>
+                                        <input type="text" value={tags} onChange={(e) => setTags(e.target.value)} placeholder="Comma separated…" className="w-full h-11 bg-[#0d0d0d] border border-white/[0.07] rounded-xl px-4 text-[14px] outline-none focus:border-white/15 transition-colors placeholder:text-white/20" />
                                     </div>
-                                    <div className="space-y-3">
-                                        <Label.Root className="text-[11px] font-black uppercase text-white/20 tracking-[0.2em] px-1">Location</Label.Root>
+                                    <div className="space-y-2">
+                                        <span className="text-[11px] text-white/30 px-1">Location</span>
                                         <div className="relative">
-                                            <MapPin className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-white/20" />
-                                            <input
-                                                type="text"
-                                                value={location}
-                                                onChange={(e) => setLocation(e.target.value)}
-                                                placeholder="Add location..."
-                                                className="w-full h-14 bg-black border border-white/10 rounded-2xl pl-14 pr-6 text-[15px] outline-none focus:border-white/20 transition-all placeholder:text-white/10"
-                                            />
+                                            <MapPin className="absolute left-3.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-white/20" />
+                                            <input type="text" value={location} onChange={(e) => setLocation(e.target.value)} placeholder="Add location…" className="w-full h-11 bg-[#0d0d0d] border border-white/[0.07] rounded-xl pl-10 pr-4 text-[14px] outline-none focus:border-white/15 transition-colors placeholder:text-white/20" />
                                         </div>
-                                    </div>
-                                </div>
-
-                                <div className="space-y-3">
-                                    <Label.Root className="text-[11px] font-black uppercase text-white/20 tracking-[0.2em] px-1">External Source Link</Label.Root>
-                                    <div className="relative">
-                                        <LinkIcon className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-white/20" />
-                                        <input
-                                            type="text"
-                                            value={externalLink}
-                                            onChange={(e) => setExternalLink(e.target.value)}
-                                            placeholder="https://your-source.com"
-                                            className="w-full h-14 bg-black border border-white/10 rounded-2xl pl-14 pr-6 text-[15px] outline-none focus:border-white/20 transition-all placeholder:text-white/10"
-                                        />
                                     </div>
                                 </div>
                             </div>
                         </div>
 
                         {/* Monetization */}
-                        <div className="bg-[#0A0A0A] border border-white/10 rounded-[2rem] p-10 shadow-xl">
-                            <SectionHeader title="Monetization Engine" icon={DollarSign} description="Revenue Architecture" />
-
-                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-10">
+                        <div className="bg-[#111] border border-white/[0.06] rounded-2xl p-6">
+                            <SectionHeader title="Monetization" icon={DollarSign} />
+                            <div className="flex flex-wrap gap-2 mb-5">
                                 {[
                                     { id: 'free', label: 'Free', icon: Globe },
                                     { id: 'premium', label: 'Premium', icon: Gem },
-                                    { id: 'followers', label: 'Fans', icon: Users },
+                                    { id: 'followers', label: 'Fans only', icon: Users },
                                     { id: 'private', label: 'Private', icon: LockIcon }
                                 ].map((type) => (
-                                    <button
-                                        key={type.id}
-                                        onClick={() => setPostType(type.id)}
-                                        className={`flex flex-col items-center gap-4 p-6 rounded-3xl border transition-all ${postType === type.id
-                                            ? "bg-white/5 border-white/20 text-white"
-                                            : "bg-black border-white/5 text-white/20 hover:border-white/10"
-                                            }`}
-                                    >
-                                        <type.icon className={`w-6 h-6 ${postType === type.id ? "text-white" : "opacity-30"}`} />
-                                        <span className="text-[11px] font-black uppercase tracking-[0.15em]">{type.label}</span>
+                                    <button key={type.id} onClick={() => setPostType(type.id)}
+                                        className={`flex items-center gap-2 px-4 py-2 rounded-lg border text-[13px] transition-all ${postType === type.id ? "border-white/20 bg-white/[0.07] text-white" : "border-white/[0.06] text-white/35 hover:text-white/60"}`}>
+                                        <type.icon className="w-3.5 h-3.5" />{type.label}
                                     </button>
                                 ))}
                             </div>
 
                             {postType === 'premium' && (
-                                <motion.div
-                                    initial={{ opacity: 0, height: 0 }}
-                                    animate={{ opacity: 1, height: 'auto' }}
-                                    className="space-y-8 pt-8 border-t border-white/5"
-                                >
-                                    <div className="flex flex-col md:flex-row gap-8 md:items-end">
-                                        <div className="flex-1 space-y-3">
-                                            <Label.Root className="text-[11px] font-black uppercase text-white/20 tracking-[0.2em] px-1">Unlock Price (Coins)</Label.Root>
+                                <div className="space-y-4 pt-4 border-t border-white/[0.05]">
+                                    <div className="flex flex-col md:flex-row gap-4 md:items-center">
+                                        <div className="flex-1 space-y-2">
+                                            <span className="text-[11px] text-white/30 px-1">Unlock price (coins)</span>
                                             <div className="relative">
-                                                <Gem className="absolute left-6 top-1/2 -translate-y-1/2 w-5 h-5 text-white" />
-                                                <input
-                                                    type="number"
-                                                    value={price}
-                                                    onChange={(e) => setPrice(e.target.value)}
-                                                    min="5"
-                                                    className="w-full h-16 bg-black border-2 border-white/10 rounded-3xl pl-16 pr-6 text-2xl font-black outline-none focus:border-white/20"
-                                                />
+                                                <Gem className="absolute left-3.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-white/30" />
+                                                <input type="number" value={price} onChange={(e) => setPrice(e.target.value)} min="5" className="w-full h-11 bg-[#0d0d0d] border border-white/[0.07] rounded-xl pl-10 pr-4 text-[15px] outline-none focus:border-white/15 transition-colors" />
                                             </div>
                                         </div>
-                                        <div className="p-5 bg-white/[0.03] rounded-3xl border border-white/10 flex-1 h-16 flex items-center gap-4">
-                                            <div className="w-9 h-9 rounded-xl bg-white/5 flex items-center justify-center">
-                                                <CheckCircle2 className="w-5 h-5 text-white/80" />
-                                            </div>
-                                            <div>
-                                                <p className="text-[10px] font-black text-white/20 uppercase tracking-[0.2em] leading-none mb-1.5">Earnings</p>
-                                                <p className="text-[16px] font-black text-white leading-none">{(Number(price) * 0.8).toFixed(1)} Coins (80%)</p>
-                                            </div>
+                                        <div className="px-4 py-3 bg-white/[0.03] border border-white/[0.06] rounded-xl">
+                                            <p className="text-[11px] text-white/30">You earn</p>
+                                            <p className="text-[15px] font-semibold text-white mt-0.5">{(Number(price) * 0.8).toFixed(1)} coins <span className="text-white/30 text-[12px] font-normal">(80%)</span></p>
                                         </div>
                                     </div>
-
-                                    <div className="flex items-center gap-4 px-6 py-4 bg-white/5 border border-white/5 rounded-2xl">
-                                        <Clock className="w-5 h-5 text-white/40" />
-                                        <p className="text-[12px] font-medium text-white/60">
-                                            <span className="font-bold text-white uppercase tracking-widest text-[10px] mr-2">Timed Unlock:</span> This post will automatically become free after 24 hours.
-                                        </p>
-                                    </div>
-                                </motion.div>
+                                </div>
                             )}
                         </div>
 
-                        {/* Privacy & Visibility */}
-                        <div className="bg-[#0A0A0A] border border-white/10 rounded-[2rem] overflow-hidden shadow-xl">
-                            <button
-                                onClick={() => setIsAdvancedOpen(!isAdvancedOpen)}
-                                className="w-full px-10 py-8 flex items-center justify-between hover:bg-white/[0.02] transition-all"
-                            >
-                                <SectionHeader title="Privacy & Advanced Broadcast" icon={ShieldAlert} description="Surgical Permissions" />
-                                <ChevronDown className={`w-6 h-6 text-white/20 transition-transform ${isAdvancedOpen ? "rotate-180" : ""}`} />
+                        {/* Privacy */}
+                        <div className="bg-[#111] border border-white/[0.06] rounded-2xl overflow-hidden">
+                            <button onClick={() => setIsAdvancedOpen(!isAdvancedOpen)} className="w-full px-6 py-4 flex items-center justify-between hover:bg-white/[0.02] transition-colors">
+                                <div className="flex items-center gap-2.5">
+                                    <ShieldAlert className="w-4 h-4 text-white/30" />
+                                    <span className="text-[14px] font-semibold text-white/80">Privacy &amp; settings</span>
+                                </div>
+                                <ChevronDown className={`w-4 h-4 text-white/25 transition-transform ${isAdvancedOpen ? "rotate-180" : ""}`} />
                             </button>
-
-                            <AnimatePresence>
-                                {isAdvancedOpen && (
-                                    <motion.div
-                                        initial={{ height: 0, opacity: 0 }}
-                                        animate={{ height: 'auto', opacity: 1 }}
-                                        exit={{ height: 0, opacity: 0 }}
-                                        className="px-10 pb-10 space-y-4"
-                                    >
-                                        <ControlRow label="Allow Comments" icon={MessageCircle} description="Enable public dialogue">
-                                            <Toggle active={allowComments} onClick={() => setAllowComments(!allowComments)} />
-                                        </ControlRow>
-                                        <ControlRow label="Allow Downloads" icon={Download} description="Save to local device">
-                                            <Toggle active={allowDownloads} onClick={() => setAllowDownloads(!allowDownloads)} />
-                                        </ControlRow>
-                                        <ControlRow label="Allow Shares" icon={Share2} description="External cross-posting">
-                                            <Toggle active={allowShares} onClick={() => setAllowShares(!allowShares)} />
-                                        </ControlRow>
-
-                                        <div className="pt-8 mt-6 border-t border-white/5">
-                                            <Label.Root className="text-[11px] font-black uppercase text-white/20 tracking-[0.2em] pl-1 mb-6 block text-center">Schedule Transmission</Label.Root>
-                                            <div className="flex items-center gap-4">
-                                                <button className="flex-1 h-14 bg-black border border-white/10 rounded-2xl flex items-center justify-center gap-4 text-sm font-bold text-white/60 hover:text-white transition-all">
-                                                    <Calendar className="w-5 h-5 opacity-40" />
-                                                    {dayjs().format('MMM DD, YYYY')}
-                                                </button>
-                                                <button className="flex-1 h-14 bg-black border border-white/10 rounded-2xl flex items-center justify-center gap-4 text-sm font-bold text-white/60 hover:text-white transition-all">
-                                                    <Clock className="w-5 h-5 opacity-40" />
-                                                    {dayjs().format('HH:mm')}
-                                                </button>
-                                            </div>
+                            {isAdvancedOpen && (
+                                <div className="px-6 pb-5 space-y-0 border-t border-white/[0.05]">
+                                    <ControlRow label="Allow comments" icon={MessageCircle}>
+                                        <Toggle active={allowComments} onClick={() => setAllowComments(!allowComments)} />
+                                    </ControlRow>
+                                    <ControlRow label="Allow downloads" icon={Download}>
+                                        <Toggle active={allowDownloads} onClick={() => setAllowDownloads(!allowDownloads)} />
+                                    </ControlRow>
+                                    <ControlRow label="Allow shares" icon={Share2}>
+                                        <Toggle active={allowShares} onClick={() => setAllowShares(!allowShares)} />
+                                    </ControlRow>
+                                    <ControlRow label="Age restricted (18+)" icon={ShieldAlert}>
+                                        <Toggle active={is18Plus} onClick={() => setIs18Plus(!is18Plus)} />
+                                    </ControlRow>
+                                    <ControlRow label="Sensitive content" icon={ShieldAlert}>
+                                        <Toggle active={isSensitive} onClick={() => setIsSensitive(!isSensitive)} />
+                                    </ControlRow>
+                                    <div className="pt-4 mt-2 border-t border-white/[0.05] space-y-2">
+                                        <span className="text-[11px] text-white/30">Schedule</span>
+                                        <div className="flex gap-3">
+                                            <button className="flex-1 h-10 bg-[#0d0d0d] border border-white/[0.07] rounded-xl flex items-center justify-center gap-2 text-[13px] text-white/40 hover:text-white/70 transition-colors">
+                                                <Calendar className="w-3.5 h-3.5" />{dayjs().format('MMM DD, YYYY')}
+                                            </button>
+                                            <button className="flex-1 h-10 bg-[#0d0d0d] border border-white/[0.07] rounded-xl flex items-center justify-center gap-2 text-[13px] text-white/40 hover:text-white/70 transition-colors">
+                                                <Clock className="w-3.5 h-3.5" />{dayjs().format('HH:mm')}
+                                            </button>
                                         </div>
-                                    </motion.div>
-                                )}
-                            </AnimatePresence>
+                                    </div>
+                                </div>
+                            )}
                         </div>
 
-                        {/* Content Sensitivity */}
-                        <div className="bg-[#0A0A0A] border border-white/10 rounded-[2rem] p-10 shadow-xl">
-                            <SectionHeader title="Content Sensitivity" icon={ShieldAlert} description="Platform Compliance" />
-                            <div className="space-y-4 pt-2">
-                                <div className="flex items-center justify-between p-6 bg-black rounded-2xl border border-white/5">
-                                    <div className="flex items-center gap-4">
-                                        <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center font-black text-[11px] text-white/60">
-                                            18+
-                                        </div>
-                                        <p className="text-[15px] font-bold text-white/80">Age Restricted</p>
-                                    </div>
-                                    <Toggle active={is18Plus} onClick={() => setIs18Plus(!is18Plus)} />
-                                </div>
-                                <div className="flex items-center justify-between p-6 bg-black rounded-2xl border border-white/5">
-                                    <div className="flex items-center gap-4">
-                                        <ShieldAlert className="w-6 h-6 text-white/30" />
-                                        <p className="text-[15px] font-bold text-white/80">Sensitive Content Label</p>
-                                    </div>
-                                    <Toggle active={isSensitive} onClick={() => setIsSensitive(!isSensitive)} />
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Engagement Engine */}
-                        <div className="bg-[#0A0A0A] border border-white/10 rounded-[2rem] p-10 shadow-xl">
-                            <SectionHeader title="Engagement Engine" icon={Zap} description="Growth Optimization" />
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-2">
-                                <button
-                                    onClick={() => setBoostPost(!boostPost)}
-                                    className={`flex flex-col items-center gap-4 p-8 rounded-[2rem] border transition-all ${boostPost ? "bg-white/10 border-white/30" : "bg-black border-white/5 opacity-50"
-                                        }`}
-                                >
-                                    <Zap className="w-6 h-6" />
-                                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-center">Boost Post</span>
-                                </button>
-                                <button
-                                    onClick={() => setIsPinned(!isPinned)}
-                                    className={`flex flex-col items-center gap-4 p-8 rounded-[2rem] border transition-all ${isPinned ? "bg-white/10 border-white/30" : "bg-black border-white/5 opacity-50"
-                                        }`}
-                                >
-                                    <Pin className="w-6 h-6" />
-                                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-center">Pin Profile</span>
-                                </button>
-                                <button
-                                    onClick={() => setNotifyFollowers(!notifyFollowers)}
-                                    className={`flex flex-col items-center gap-4 p-8 rounded-[2rem] border transition-all ${notifyFollowers ? "bg-white/10 border-white/30" : "bg-black border-white/5 opacity-50"
-                                        }`}
-                                >
-                                    <Bell className="w-6 h-6" />
-                                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-center">Notify Fans</span>
-                                </button>
+                        {/* Distribution */}
+                        <div className="bg-[#111] border border-white/[0.06] rounded-2xl p-6">
+                            <SectionHeader title="Distribution" icon={Zap} />
+                            <div className="flex flex-wrap gap-2">
+                                {[
+                                    { state: boostPost, set: setBoostPost, icon: Zap, label: "Boost" },
+                                    { state: isPinned, set: setIsPinned, icon: Pin, label: "Pin" },
+                                    { state: notifyFollowers, set: setNotifyFollowers, icon: Bell, label: "Notify fans" },
+                                ].map(({ state, set, icon: Icon, label }) => (
+                                    <button key={label} onClick={() => set(!state)}
+                                        className={`flex items-center gap-2 px-4 py-2 rounded-lg border text-[13px] transition-all ${state ? "border-white/20 bg-white/[0.07] text-white" : "border-white/[0.06] text-white/35 hover:text-white/60"}`}>
+                                        <Icon className="w-3.5 h-3.5" />{label}
+                                    </button>
+                                ))}
                             </div>
                         </div>
 
@@ -556,62 +470,42 @@ function PostEditorContent() {
                 </div>
             </main>
 
-            <div className="fixed bottom-0 left-0 right-0 h-28 bg-black/95 backdrop-blur-2xl border-t border-white/10 z-[100] px-8">
-                <div className="max-w-7xl mx-auto h-full flex items-center justify-between">
-                    <div className="flex items-center gap-8">
-                        <button className="hidden md:flex items-center gap-3 text-white/30 hover:text-white transition-colors group">
-                            <span className="w-10 h-10 rounded-full border border-white/10 flex items-center justify-center group-hover:border-white transition-all-faster">
-                                <X className="w-4 h-4" />
-                            </span>
-                            <span className="text-[12px] font-black uppercase tracking-[0.2em]">Discard</span>
-                        </button>
-                        <button className="flex items-center gap-3 text-white/60 hover:text-white transition-colors group px-8 py-4 bg-white/5 rounded-full hover:bg-white/10">
-                            <Layers className="w-5 h-5 opacity-40" />
-                            <span className="text-[12px] font-black uppercase tracking-[0.2em]">Save Draft</span>
-                        </button>
-                    </div>
-
-                    <div className="flex items-center gap-6">
-                        <div className="hidden sm:flex flex-col items-end mr-6">
-                            <p className="text-[10px] font-black text-white/20 uppercase tracking-[0.3em] leading-none mb-1.5">Network Status</p>
-                            <p className="text-[14px] font-black text-green-500 leading-none flex items-center gap-2">
-                                <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
-                                READY TO BROADCAST
-                            </p>
-                        </div>
+            <div className="fixed bottom-0 left-0 right-0 border-t border-white/[0.06] bg-[#0d0d0d] z-[100] px-6 py-4">
+                <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-3">
                         <button
-                            onClick={handlePublish}
-                            disabled={!localCaption || isUploading}
-                            className={`px-14 h-16 rounded-full font-black text-[15px] uppercase tracking-[0.2em] transition-all shadow-[0_12px_60px_rgba(255,45,85,0.4)] flex items-center gap-4 ${localCaption && !isUploading
-                                ? "bg-[#FF2D55] text-white hover:scale-[1.05] active:scale-[0.95]"
-                                : "bg-white/5 text-white/20 cursor-not-allowed shadow-none"
-                                }`}
+                            onClick={() => router.back()}
+                            className="px-4 py-2 rounded-lg text-sm text-white/40 hover:text-white/70 transition-colors"
                         >
-                            {isUploading ? <Loader2 className="w-6 h-6 animate-spin" /> : (
-                                <>
-                                    <Zap className="w-5 h-5 fill-white" />
-                                    Publish Now
-                                </>
-                            )}
+                            Discard
+                        </button>
+                        <button className="px-4 py-2 rounded-lg border border-white/[0.07] text-sm text-white/40 hover:text-white/60 transition-colors">
+                            Save draft
                         </button>
                     </div>
+                    <button
+                        onClick={handlePublish}
+                        disabled={!localCaption || isUploading}
+                        className={`px-8 py-2.5 rounded-xl text-[15px] font-semibold transition-all flex items-center gap-2 ${localCaption && !isUploading
+                            ? "bg-gradient-to-r from-[#FF2D55] to-[#a855f7] text-white hover:opacity-90 active:scale-[0.98]"
+                            : "bg-white/[0.05] text-white/20 cursor-not-allowed"
+                            }`}
+                    >
+                        {isUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+                        {isUploading ? `Uploading ${uploadProgress}%` : "Publish"}
+                    </button>
                 </div>
             </div>
 
-            <AnimatePresence>
-                {isUploading && (
-                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="fixed inset-0 z-[200] bg-black flex flex-col items-center justify-center p-12 text-center">
-                        <div className="relative w-40 h-40 mb-16 flex items-center justify-center">
-                            <div className="absolute inset-0 rounded-full border-2 border-white/10" />
-                            <div className="absolute inset-0 rounded-full border-t-2 border-white animate-spin" />
-                            <div className="w-20 h-20 bg-white/20 rounded-full blur-[60px] animate-pulse opacity-50" />
-                            <Zap className="w-12 h-12 text-white relative z-10" />
-                        </div>
-                        <h2 className="text-4xl font-black tracking-tighter mb-4 uppercase">Broadcasting Content</h2>
-                        <p className="text-white/40 text-[14px] font-black uppercase tracking-[0.5em]">{uploadProgress}% Synchronized</p>
-                    </motion.div>
-                )}
-            </AnimatePresence>
+            {isUploading && (
+                <div className="fixed inset-0 z-[200] bg-[#0d0d0d]/95 flex flex-col items-center justify-center gap-5">
+                    <div className="w-10 h-10 rounded-full border border-white/10 border-t-white/50 animate-spin" />
+                    <div className="text-center">
+                        <p className="text-[15px] font-semibold text-white">Publishing…</p>
+                        <p className="text-[13px] text-white/30 mt-1">{uploadProgress}% uploaded</p>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
@@ -619,11 +513,8 @@ function PostEditorContent() {
 export default function PostEditorPage() {
     return (
         <Suspense fallback={
-            <div className="min-h-screen bg-black flex items-center justify-center p-6 text-white font-sans uppercase tracking-[0.2em] text-[10px] font-black">
-                <div className="flex flex-col items-center gap-4">
-                    <Loader2 className="w-8 h-8 animate-spin text-[#FF2D55]" />
-                    <span>Synchronizing Context...</span>
-                </div>
+            <div className="min-h-screen bg-[#0d0d0d] flex items-center justify-center">
+                <Loader2 className="w-5 h-5 animate-spin text-white/30" />
             </div>
         }>
             <PostEditorContent />

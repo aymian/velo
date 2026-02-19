@@ -21,6 +21,8 @@ import { Navbar } from "@/components/Navbar";
 import { db } from "@/lib/firebase/config";
 import { collection, query, where, getDocs, limit } from "firebase/firestore";
 import { COLLECTIONS, User as UserType } from "@/lib/firebase/collections";
+import { useAuthStore } from "@/lib/store";
+import { useIsFollowing, useFollowUser, useUnfollowUser } from "@/lib/firebase/hooks";
 
 export default function UserProfilePage() {
     const params = useParams();
@@ -34,6 +36,35 @@ export default function UserProfilePage() {
     const [activeTab, setActiveTab] = useState("all");
     const [userData, setUserData] = useState<UserType | null>(null);
     const [loading, setLoading] = useState(true);
+    const { user: currentUser } = useAuthStore();
+
+    const { data: isFollowing, isLoading: followStatusLoading } = useIsFollowing(currentUser?.uid, userData?.uid);
+    const followMutation = useFollowUser();
+    const unfollowMutation = useUnfollowUser();
+
+    const handleFollowToggle = async () => {
+        if (!currentUser || !userData) return;
+
+        try {
+            if (isFollowing) {
+                await unfollowMutation.mutateAsync({
+                    followerId: currentUser.uid,
+                    followingId: userData.uid
+                });
+                // Update local state for immediate feedback
+                setUserData(prev => prev ? { ...prev, followers: (prev.followers || 1) - 1 } : null);
+            } else {
+                await followMutation.mutateAsync({
+                    followerId: currentUser.uid,
+                    followingId: userData.uid
+                });
+                // Update local state for immediate feedback
+                setUserData(prev => prev ? { ...prev, followers: (prev.followers || 0) + 1 } : null);
+            }
+        } catch (error) {
+            console.error("Error toggling follow:", error);
+        }
+    };
 
     useEffect(() => {
         const fetchUser = async () => {
@@ -133,16 +164,33 @@ export default function UserProfilePage() {
                                     </div>
                                 </div>
                                 <div className="flex flex-col">
-                                    <span className="text-xl font-bold">51</span>
+                                    <span className="text-xl font-bold">{userData?.followers || 0}</span>
                                     <span className="text-[12px] text-white/40 font-medium">Followers</span>
+                                </div>
+                                <div className="flex flex-col">
+                                    <span className="text-xl font-bold">{userData?.following || 0}</span>
+                                    <span className="text-[12px] text-white/40 font-medium">Following</span>
                                 </div>
                             </div>
 
                             {/* Action Buttons */}
                             <div className="flex flex-wrap items-center gap-3 pt-2">
-                                <button className="flex items-center justify-center gap-2 px-8 py-3 bg-gradient-to-r from-[#ff0080] to-[#ff4081] rounded-full font-bold text-[15px] hover:scale-105 active:scale-95 transition-all shadow-lg shadow-pink-500/20">
-                                    <Plus className="w-5 h-5 stroke-[3]" />
-                                    Follow
+                                <button
+                                    onClick={handleFollowToggle}
+                                    disabled={followStatusLoading || followMutation.isPending || unfollowMutation.isPending || currentUser?.uid === userData?.uid}
+                                    className={`flex items-center justify-center gap-2 px-8 py-3 rounded-full font-bold text-[15px] hover:scale-105 active:scale-95 transition-all shadow-lg ${isFollowing
+                                        ? "bg-white/10 border border-white/20 text-white"
+                                        : "bg-gradient-to-r from-[#ff0080] to-[#ff4081] text-white shadow-pink-500/20"
+                                        } disabled:opacity-50 disabled:cursor-not-allowed`}
+                                >
+                                    {isFollowing ? (
+                                        "Following"
+                                    ) : (
+                                        <>
+                                            <Plus className="w-5 h-5 stroke-[3]" />
+                                            Follow
+                                        </>
+                                    )}
                                 </button>
                                 <button className="flex items-center justify-center gap-2 px-6 py-3 bg-white/5 border border-white/10 rounded-full font-bold text-[15px] hover:bg-white/10 transition-all">
                                     <MessageCircle className="w-5 h-5" />
@@ -193,7 +241,7 @@ export default function UserProfilePage() {
                         <p className="text-xl font-bold tracking-wide">No Posts</p>
                     </div>
                 </main>
-            </div>
-        </div>
+            </div >
+        </div >
     );
 }

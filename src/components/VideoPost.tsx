@@ -1,7 +1,6 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useState, useRef, useEffect, useCallback, memo } from 'react';
 import { Lock, Play, Pause, Volume2, VolumeX, Maximize2, Settings2, Loader2, Check } from 'lucide-react';
 import { usePlayerStore } from '@/lib/store';
 
@@ -26,7 +25,7 @@ const QUALITY_OPTIONS = [
     { label: '144p', value: '150' }, // Ultra low
 ];
 
-export const VideoPost = ({
+export const VideoPost = memo(function VideoPost({
     id,
     publicId,
     videoUrl,
@@ -36,9 +35,10 @@ export const VideoPost = ({
     previewDuration = 5,
     blurEnabled,
     caption
-}: VideoPostProps) => {
+}: VideoPostProps) {
     const videoRef = useRef<HTMLVideoElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
+    const [isVisible, setIsVisible] = useState(false);
     const [isHovering, setIsHovering] = useState(false);
     const [currentTime, setCurrentTime] = useState(0);
     const [duration, setDuration] = useState(0);
@@ -46,6 +46,23 @@ export const VideoPost = ({
     const [showSettings, setShowSettings] = useState(false);
     const [currentQuality, setCurrentQuality] = useState('q_auto');
     const { currentVideoId, setCurrentVideo, muted, setMuted } = usePlayerStore();
+
+    // 🚀 LAZY LOAD: Only load video when in viewport
+    useEffect(() => {
+        const el = containerRef.current;
+        if (!el) return;
+        const observer = new IntersectionObserver(
+            ([entry]) => {
+                if (entry.isIntersecting) {
+                    setIsVisible(true);
+                    observer.disconnect();
+                }
+            },
+            { rootMargin: '200px' }
+        );
+        observer.observe(el);
+        return () => observer.disconnect();
+    }, []);
 
     const isPlaying = currentVideoId === id;
 
@@ -71,7 +88,7 @@ export const VideoPost = ({
         videoRef.current.muted = muted;
     }, [muted]);
 
-    const handleTogglePlay = (e: React.MouseEvent) => {
+    const handleTogglePlay = useCallback((e: React.MouseEvent) => {
         e.stopPropagation();
         if (showSettings) {
             setShowSettings(false);
@@ -82,34 +99,34 @@ export const VideoPost = ({
         } else {
             setCurrentVideo(id);
         }
-    };
+    }, [showSettings, isPlaying, id, setCurrentVideo]);
 
-    const handleTimeUpdate = () => {
+    const handleTimeUpdate = useCallback(() => {
         if (videoRef.current) {
             setCurrentTime(videoRef.current.currentTime);
         }
-    };
+    }, []);
 
-    const handleLoadedMetadata = () => {
+    const handleLoadedMetadata = useCallback(() => {
         if (videoRef.current) {
             setDuration(videoRef.current.duration);
         }
-    };
+    }, []);
 
-    const handleFullscreen = (e: React.MouseEvent) => {
+    const handleFullscreen = useCallback((e: React.MouseEvent) => {
         e.stopPropagation();
         if (containerRef.current?.requestFullscreen) {
             containerRef.current.requestFullscreen();
         }
-    };
+    }, []);
 
-    const handleQualityChange = (quality: string) => {
+    const handleQualityChange = useCallback((quality: string) => {
         if (videoRef.current) {
-            setCurrentTime(videoRef.current.currentTime); // Save current time
+            setCurrentTime(videoRef.current.currentTime);
         }
         setCurrentQuality(quality);
         setShowSettings(false);
-    };
+    }, []);
 
     const formatTime = (time: number) => {
         const minutes = Math.floor(time / 60);
@@ -144,16 +161,18 @@ export const VideoPost = ({
                 onMouseLeave={() => setIsHovering(false)}
                 onClick={handleTogglePlay}
             >
-                {/* 1. Blurred Background */}
-                <div className="absolute inset-0 pointer-events-none z-0">
-                    <video key={`${finalUrl}-blur`} src={finalUrl} className="w-full h-full object-cover blur-3xl opacity-20 scale-125" muted loop playsInline />
-                </div>
+                {/* 1. Blurred Background (CSS-only, no extra video decode) */}
+                {isVisible && (
+                    <div className="absolute inset-0 pointer-events-none z-0 bg-gradient-to-b from-white/[0.03] to-black/40" />
+                )}
 
-                {/* 2. Main Video */}
+                {/* 2. Main Video (lazy loaded) */}
                 <video
                     ref={videoRef}
-                    key={finalUrl} // Reload source on quality change
-                    src={finalUrl}
+                    key={finalUrl}
+                    src={isVisible ? finalUrl : undefined}
+                    preload={isVisible ? 'metadata' : 'none'}
+                    poster={isVisible && publicId ? `https://res.cloudinary.com/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/video/upload/so_0,w_400,q_auto,f_auto/${publicId}.jpg` : undefined}
                     className={`relative w-full h-full object-contain z-10 ${isLocked && blurEnabled ? 'blur-3xl scale-110 opacity-30' : ''
                         }`}
                     loop
@@ -165,25 +184,19 @@ export const VideoPost = ({
                 />
 
                 {/* 3. Buffering */}
-                <AnimatePresence>
-                    {isBuffering && isPlaying && (
-                        <motion.div className="absolute inset-0 z-20 flex items-center justify-center bg-black/5 backdrop-blur-[2px]">
-                            <div className="w-12 h-12 border-[3px] border-white/10 border-t-white rounded-full animate-spin shadow-2xl" />
-                        </motion.div>
-                    )}
-                </AnimatePresence>
+                {isBuffering && isPlaying && (
+                    <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/5 backdrop-blur-[2px]">
+                        <div className="w-12 h-12 border-[3px] border-white/10 border-t-white rounded-full animate-spin shadow-2xl" />
+                    </div>
+                )}
 
                 {!isLocked && (
                     <div className={`absolute inset-0 z-30 flex flex-col justify-end p-5 transition-opacity duration-300 ${isHovering || !isPlaying || showSettings ? 'opacity-100' : 'opacity-0'}`}>
 
                         {/* Settings Modal */}
-                        <AnimatePresence>
                             {showSettings && (
-                                <motion.div
-                                    initial={{ opacity: 0, scale: 0.95 }}
-                                    animate={{ opacity: 1, scale: 1 }}
-                                    exit={{ opacity: 0, scale: 0.95 }}
-                                    className="absolute inset-0 z-50 flex items-center justify-center p-6 bg-black/40 backdrop-blur-md"
+                                <div
+                                    className="absolute inset-0 z-50 flex items-center justify-center p-6 bg-black/40 backdrop-blur-md animate-in fade-in zoom-in-95 duration-150"
                                     onClick={(e) => e.stopPropagation()}
                                 >
                                     <div className="w-full max-w-[180px] bg-[#121212] rounded-[24px] border border-white/10 overflow-hidden shadow-3xl">
@@ -205,9 +218,8 @@ export const VideoPost = ({
                                             ))}
                                         </div>
                                     </div>
-                                </motion.div>
+                                </div>
                             )}
-                        </AnimatePresence>
 
                         <div className="space-y-4 bg-gradient-to-t from-black/90 via-black/40 to-transparent p-5 rounded-b-[32px]">
 
@@ -297,4 +309,4 @@ export const VideoPost = ({
             <p className="text-[9px] font-bold text-white/20 uppercase tracking-widest">Post Unavailable</p>
         </div>
     );
-};
+});

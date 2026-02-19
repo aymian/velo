@@ -46,6 +46,67 @@
   }
 }
 
+/* Performance animations (no JS overhead) */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes zoomFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-in {
+  animation: fadeIn var(--duration, 300ms) ease-out both;
+}
+
+.fade-in {
+  animation-name: fadeIn;
+}
+
+.zoom-in-95 {
+  animation-name: zoomFadeIn;
+}
+
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+  }
+
+  to {
+    opacity: 0;
+  }
+}
+
+.fade-out {
+  animation: fadeOut var(--duration, 150ms) ease-in both;
+}
+
+.duration-150 {
+  --duration: 150ms;
+}
+
+.duration-200 {
+  --duration: 200ms;
+}
+
+.duration-300 {
+  --duration: 300ms;
+}
+
 /* Nova-style Density: Reducing padding for a "Fast" UI */
 @layer base {
 

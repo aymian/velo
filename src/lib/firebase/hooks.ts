@@ -2,9 +2,9 @@
 // Custom hooks using TanStack Query for data fetching with caching
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { 
-  getUserById, 
-  createUser, 
+import {
+  getUserById,
+  createUser,
   updateUser,
   getPostById,
   getUserPosts,
@@ -14,7 +14,8 @@ import {
   followUser,
   unfollowUser,
   getFollowers,
-  getFollowing
+  getFollowing,
+  checkFollowing
 } from './helpers';
 
 // Query keys
@@ -38,7 +39,7 @@ export function useUser(userId: string) {
 
 export function useCreateUser() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: ({ userId, userData }: { userId: string; userData: any }) =>
       createUser(userId, userData),
@@ -50,7 +51,7 @@ export function useCreateUser() {
 
 export function useUpdateUser() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: ({ userId, userData }: { userId: string; userData: any }) =>
       updateUser(userId, userData),
@@ -79,13 +80,13 @@ export function useUserPosts(userId: string, limitCount = 20) {
 
 export function useCreatePost() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: ({ postId, postData }: { postId: string; postData: any }) =>
       createPost(postId, postData),
     onSuccess: (_, { postData }) => {
-      queryClient.invalidateQueries({ 
-        queryKey: QUERY_KEYS.userPosts(postData.userId) 
+      queryClient.invalidateQueries({
+        queryKey: QUERY_KEYS.userPosts(postData.userId)
       });
     },
   });
@@ -93,7 +94,7 @@ export function useCreatePost() {
 
 export function useUpdatePost() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: ({ postId, postData }: { postId: string; postData: any }) =>
       updatePost(postId, postData),
@@ -105,7 +106,7 @@ export function useUpdatePost() {
 
 export function useDeletePost() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: (postId: string) => deletePost(postId),
     onSuccess: () => {
@@ -131,9 +132,17 @@ export function useFollowing(userId: string) {
   });
 }
 
+export function useIsFollowing(followerId: string | undefined, followingId: string | undefined) {
+  return useQuery({
+    queryKey: ['isFollowing', followerId, followingId],
+    queryFn: () => checkFollowing(followerId!, followingId!),
+    enabled: !!followerId && !!followingId,
+  });
+}
+
 export function useFollowUser() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: ({ followerId, followingId }: { followerId: string; followingId: string }) =>
       followUser(followerId, followingId),
@@ -146,7 +155,7 @@ export function useFollowUser() {
 
 export function useUnfollowUser() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: ({ followerId, followingId }: { followerId: string; followingId: string }) =>
       unfollowUser(followerId, followingId),

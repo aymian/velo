@@ -1,0 +1,110 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper function to check if user is authenticated
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    
+    // Helper function to check if user owns the document
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+
+    // --- Core Velo Rules ---
+
+    match /users/{userId} {
+      allow read: if true;
+      allow create: if isSignedIn() && isOwner(userId);
+      allow update: if isSignedIn() && (isOwner(userId) || isFollowCountUpdate());
+      allow delete: if isSignedIn() && isOwner(userId);
+
+      // Subcollections for social social
+      match /followers/{followerId} {
+        allow read: if true;
+        allow write: if isSignedIn();
+      }
+      match /following/{followingId} {
+        allow read: if true;
+        allow write: if isSignedIn() && isOwner(userId);
+      }
+    }
+
+    // Posts (Registry Content)
+    match /posts/{postId} {
+      allow read: if true;
+      allow create: if isSignedIn();
+      // Allow updates for engagement (views, likes) even if not owner, 
+      // but strictly restrict what fields can be changed by non-owners
+      allow update: if isSignedIn(); 
+      allow delete: if isSignedIn() && resource.data.creatorId == request.auth.uid;
+    }
+
+    // Comments
+    match /comments/{commentId} {
+      allow read: if true;
+      allow create: if isSignedIn();
+      allow update, delete: if isSignedIn() && (resource.data.userId == request.auth.uid);
+    }
+
+    // Likes
+    match /likes/{likeId} {
+      allow read: if true;
+      allow create: if isSignedIn();
+      allow delete: if isSignedIn() && resource.data.userId == request.auth.uid;
+    }
+
+    match /follows/{followId} {
+      allow read: if true;
+      allow create: if isSignedIn() && request.auth.uid == request.resource.data.followerId;
+      allow delete: if isSignedIn() && resource.data.followerId == request.auth.uid;
+    }
+
+    function isFollowCountUpdate() {
+      let diff = resource.data.diff(request.resource.data);
+      return diff.changedKeys().hasOnly(['followers', 'following', 'updatedAt']);
+    }
+
+    // Notifications
+    match /notifications/{notificationId} {
+      allow read: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn();
+      allow update, delete: if isSignedIn() && resource.data.userId == request.auth.uid;
+    }
+
+    // --- Infrastructure & signaling ---
+
+    // Conversations & Messages
+    match /conversations/{conversationId} {
+      allow read: if isSignedIn() && (
+        resource == null || request.auth.uid in resource.data.participants
+      );
+      allow update, delete: if isSignedIn() && request.auth.uid in resource.data.participants;
+      allow create: if isSignedIn();
+      
+      match /messages/{messageId} {
+        allow read: if isSignedIn() && (
+          get(/databases/$(database)/documents/conversations/$(conversationId)) == null ||
+          request.auth.uid in get(/databases/$(database)/documents/conversations/$(conversationId)).data.participants
+        );
+        allow create: if isSignedIn();
+        allow delete: if isSignedIn() && resource.data.senderId == request.auth.uid;
+      }
+    }
+
+    // Calls (WebRTC signaling)
+    match /calls/{callId} {
+      allow read, write: if isSignedIn();
+      match /candidates/{candidateId} {
+        allow read, write: if isSignedIn();
+      }
+    }
+
+    // --- Legacy / Compatibility ---
+    match /{path=**} {
+      allow read, write: if false; // Deny by default for unmatched paths
+    }
+  }
+}

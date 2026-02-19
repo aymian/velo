@@ -54,24 +54,15 @@ function SidebarItem({ icon: Icon, active, notification, badge }: SidebarItemPro
 
 export function Sidebar() {
     return (
-        <aside className="fixed left-0 top-0 h-screen w-[72px] flex flex-col items-center justify-center gap-4 z-[60]">
-
-            {/* Home with Dot */}
+        <aside className="fixed left-0 top-0 h-screen w-[72px] hidden md:flex flex-col items-center justify-center gap-4 z-[60]">
             <SidebarItem icon={Home} active notification />
-
-            {/* Search */}
             <SidebarItem icon={Search} />
-
-            {/* Bell for Notifications with 20+ Badge */}
             <SidebarItem icon={Bell} badge="20+" />
-
-            {/* More Options (Circle with Ellipsis) */}
             <button className="p-3 group transition-all duration-300">
                 <div className="w-8 h-8 rounded-full border-2 border-white/20 flex items-center justify-center group-hover:border-white transition-colors">
                     <MoreHorizontal className="w-5 h-5 text-white/60 group-hover:text-white transition-colors" />
                 </div>
             </button>
-
         </aside>
     );
 }

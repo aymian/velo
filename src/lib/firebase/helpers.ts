@@ -16,7 +16,9 @@ import {
     DocumentData,
     QueryConstraint,
     Timestamp,
-    serverTimestamp
+    serverTimestamp,
+    increment,
+    writeBatch
 } from 'firebase/firestore';
 import { db } from './config';
 import { COLLECTIONS } from './collections';
@@ -124,6 +126,21 @@ export async function updateUser(userId: string, userData: any) {
     return updateDocument(COLLECTIONS.USERS, userId, userData);
 }
 
+export async function searchUsers(searchTerm: string, limitCount = 5) {
+    if (!searchTerm) return [];
+
+    // Simple search by username
+    // Note: Firestore doesn't support full-text search, so this is a prefix search
+    return getDocuments(
+        COLLECTIONS.USERS,
+        [
+            where('username', '>=', searchTerm),
+            where('username', '<=', searchTerm + '\uf8ff'),
+            limit(limitCount)
+        ]
+    );
+}
+
 // Post-specific helpers
 export async function getPostById(postId: string) {
     return getDocument(COLLECTIONS.POSTS, postId);
@@ -154,16 +171,64 @@ export async function deletePost(postId: string) {
 
 // Follow helpers
 export async function followUser(followerId: string, followingId: string) {
+    const batch = writeBatch(db);
+
+    // Create follow document
     const followId = `${followerId}_${followingId}`;
-    return createDocument(COLLECTIONS.FOLLOWS, followId, {
+    const followRef = doc(db, COLLECTIONS.FOLLOWS, followId);
+    batch.set(followRef, {
         followerId,
         followingId,
+        createdAt: serverTimestamp(),
     });
+
+    // Increment follower count for following user
+    const followingRef = doc(db, COLLECTIONS.USERS, followingId);
+    batch.update(followingRef, {
+        followers: increment(1),
+        updatedAt: serverTimestamp(),
+    });
+
+    // Increment following count for follower user
+    const followerRef = doc(db, COLLECTIONS.USERS, followerId);
+    batch.update(followerRef, {
+        following: increment(1),
+        updatedAt: serverTimestamp(),
+    });
+
+    return batch.commit();
 }
 
 export async function unfollowUser(followerId: string, followingId: string) {
+    const batch = writeBatch(db);
+
+    // Delete follow document
     const followId = `${followerId}_${followingId}`;
-    return deleteDocument(COLLECTIONS.FOLLOWS, followId);
+    const followRef = doc(db, COLLECTIONS.FOLLOWS, followId);
+    batch.delete(followRef);
+
+    // Decrement follower count for following user
+    const followingRef = doc(db, COLLECTIONS.USERS, followingId);
+    batch.update(followingRef, {
+        followers: increment(-1),
+        updatedAt: serverTimestamp(),
+    });
+
+    // Decrement following count for follower user
+    const followerRef = doc(db, COLLECTIONS.USERS, followerId);
+    batch.update(followerRef, {
+        following: increment(-1),
+        updatedAt: serverTimestamp(),
+    });
+
+    return batch.commit();
+}
+
+export async function checkFollowing(followerId: string, followingId: string) {
+    const followId = `${followerId}_${followingId}`;
+    const docRef = doc(db, COLLECTIONS.FOLLOWS, followId);
+    const docSnap = await getDoc(docRef);
+    return docSnap.exists();
 }
 
 export async function getFollowers(userId: string) {

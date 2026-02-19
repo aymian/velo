@@ -61,15 +61,13 @@ export function Navbar() {
   };
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 px-6 h-16 flex items-center justify-between bg-transparent border-none transition-all duration-300">
-      {/* Left Section: Logo */}
-      <div className="flex items-center gap-8 w-[180px]">
+    <nav className="fixed top-0 left-0 right-0 z-50 px-4 sm:px-6 h-16 flex items-center justify-between bg-transparent border-none transition-all duration-300">
+      <div className="flex items-center gap-4 sm:gap-8 w-[140px] sm:w-[180px]">
         <Link href="/">
           <VeloLogo showText={true} className="h-6 hover:opacity-80 transition-opacity cursor-pointer" />
         </Link>
       </div>
 
-      {/* Center Section: Navigation Links */}
       <div className="hidden lg:flex items-center justify-center gap-10 flex-1">
         {navItems.map((item) => {
           const Icon = item.icon;
@@ -114,8 +112,7 @@ export function Navbar() {
         })}
       </div>
 
-      {/* Right Section: Utilities & Profile */}
-      <div className="flex items-center gap-4 w-[180px] justify-end">
+      <div className="flex items-center gap-3 sm:gap-4 w-[140px] sm:w-[180px] justify-end">
         {isAuthenticated ? (
           <>
             {/* Search Trigger */}

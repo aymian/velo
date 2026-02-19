@@ -1,13 +1,13 @@
 "use client";
 
-import React, { useRef, useEffect, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Heart, MessageSquare, Share2, Gem, UserPlus, Volume2, VolumeX } from 'lucide-react';
-import { VideoPost } from '@/components/VideoPost';
-import { useAuthStore, usePlayerStore } from '@/lib/store';
-import { doc, getDoc } from 'firebase/firestore';
-import { db } from '@/lib/firebase/config';
-import { COLLECTIONS, User } from '@/lib/firebase/collections';
+import React, { useRef, useEffect, useState } from "react";
+import { Heart, MessageSquare, Share2, Gem, Volume2, VolumeX } from "lucide-react";
+import { VideoPost } from "@/components/VideoPost";
+import { useAuthStore, usePlayerStore } from "@/lib/store";
+import { doc, getDoc } from "firebase/firestore";
+import { db } from "@/lib/firebase/config";
+import { COLLECTIONS, User } from "@/lib/firebase/collections";
+import { useIsFollowing, useFollowUser } from "@/lib/firebase/hooks";
 
 interface ForYouVideoProps {
     post: any;
@@ -19,111 +19,136 @@ export const ForYouVideo = ({ post, isActive }: ForYouVideoProps) => {
     const { user: currentUser } = useAuthStore();
     const { muted, setMuted } = usePlayerStore();
     const [liked, setLiked] = useState(false);
+    const [likeCount, setLikeCount] = useState(post.engagement?.likes || 0);
     const [creator, setCreator] = useState<User | null>(null);
 
+    const { data: isFollowing } = useIsFollowing(currentUser?.uid, post.creatorId);
+    const followMutation = useFollowUser();
+
+    const handleFollow = async (e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (!currentUser || isFollowing) return;
+        await followMutation.mutateAsync({ followerId: currentUser.uid, followingId: post.creatorId });
+    };
+
+    const handleLike = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        setLiked((v) => !v);
+        setLikeCount((n: number) => liked ? n - 1 : n + 1);
+    };
+
     useEffect(() => {
-        const fetchCreator = async () => {
-            if (!post.creatorId) return;
-            try {
-                const docRef = doc(db, COLLECTIONS.USERS, post.creatorId);
-                const docSnap = await getDoc(docRef);
-                if (docSnap.exists()) {
-                    setCreator({ uid: docSnap.id, ...docSnap.data() } as User);
-                }
-            } catch (error) {
-                console.error("Error fetching creator:", error);
-            }
-        };
-        fetchCreator();
+        if (!post.creatorId) return;
+        getDoc(doc(db, COLLECTIONS.USERS, post.creatorId)).then((snap) => {
+            if (snap.exists()) setCreator({ uid: snap.id, ...snap.data() } as User);
+        });
     }, [post.creatorId]);
+
+    const avatarUrl = creator?.photoURL
+        ?? `https://ui-avatars.com/api/?name=${creator?.displayName ?? post.creatorId}&background=1a1a1a&color=888&size=80`;
 
     return (
         <div
             ref={containerRef}
-            className="w-full h-screen snap-start flex items-center justify-center bg-[#050505] overflow-hidden p-6 md:p-12"
+            className="w-full h-screen snap-start flex items-center justify-center bg-[#0d0d0d]"
         >
-            {/* 1. Modal-Style Video Content - Now Ultra Clean */}
-            <div className="relative w-full max-w-[300px] h-full max-h-[640px] aspect-[9/16] rounded-[40px] shadow-[0_40px_100px_rgba(0,0,0,0.8)] overflow-hidden border border-white/5 bg-black">
-                <VideoPost
-                    id={post.id}
-                    publicId={post.cloudinaryPublicId}
-                    videoUrl={post.videoUrl}
-                    status={post.status || 'ready'}
-                    isLocked={post.visibility === 'locked'}
-                    price={post.price || 0}
-                    caption={post.caption}
-                    blurEnabled={post.blurEnabled}
-                />
+            {/* Card — curved, reduced height, centered */}
+            <div className="relative flex items-end gap-3 w-full max-w-[420px] px-4">
 
-                {/* Mute Toggle - Clean Circle */}
-                <button
-                    onClick={(e) => { e.stopPropagation(); setMuted(!muted); }}
-                    className="absolute top-6 right-6 z-[60] w-9 h-9 bg-black/40 hover:bg-black/60 border border-white/10 rounded-full flex items-center justify-center text-white/80 transition-all active:scale-95"
-                >
-                    {muted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
-                </button>
+                {/* Video card */}
+                <div className="relative flex-1 rounded-2xl overflow-hidden bg-[#111]" style={{ height: "72vh" }}>
+                    <VideoPost
+                        id={post.id}
+                        publicId={post.cloudinaryPublicId}
+                        videoUrl={post.videoUrl}
+                        status={post.status || "ready"}
+                        isLocked={post.visibility === "locked"}
+                        price={post.price || 0}
+                        caption={post.caption}
+                        blurEnabled={post.blurEnabled}
+                    />
 
-                {/* 2. Side Engagement Panel - Vibrant Tango Pink Palette */}
-                <div className="absolute right-4 bottom-20 z-50 flex flex-col items-center gap-6">
-                    {/* Creator Avatar - Simplified Flat */}
-                    <div className="relative mb-2">
-                        <div className="w-10 h-10 rounded-full border border-white/20 overflow-hidden bg-[#111]">
-                            <img
-                                src={creator?.photoURL || `https://ui-avatars.com/api/?name=${creator?.displayName || post.creatorId}&background=random`}
-                                className="w-full h-full object-cover"
-                                alt="avatar"
-                            />
-                        </div>
-                        <button className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-4 h-4 bg-[#FF2D55] text-white rounded-full flex items-center justify-center border border-black transition-transform hover:scale-110">
-                            <UserPlus className="w-2.5 h-2.5" />
-                        </button>
-                    </div>
+                    {/* Scrim */}
+                    <div className="absolute inset-x-0 bottom-0 h-36 bg-gradient-to-t from-black/75 to-transparent pointer-events-none rounded-b-2xl" />
 
-                    {[
-                        { icon: Heart, val: post.engagement?.likes || 0, active: liked, onClick: () => setLiked(!liked) },
-                        { icon: MessageSquare, val: post.engagement?.comments || 0 },
-                        { icon: Gem, val: 'Tip', special: true },
-                        { icon: Share2, val: 'Share' }
-                    ].map((btn, i) => (
-                        <button
-                            key={i}
-                            onClick={btn.onClick}
-                            className="flex flex-col items-center gap-1.5 group"
-                        >
-                            <div className={`w-10 h-10 rounded-full flex items-center justify-center border transition-all duration-300 ${btn.active
-                                ? 'bg-[#FF2D55] border-[#FF2D55] text-white scale-110 shadow-[0_0_20px_rgba(255,45,85,0.3)]'
-                                : 'bg-[#111] border-white/10 text-white/40 group-hover:text-white group-hover:border-[#FF2D55]/50'
-                                }`}>
-                                <btn.icon className={`w-4 h-4 ${btn.active ? 'fill-current' : ''}`} />
-                            </div>
-                            <span className={`text-[9px] font-black uppercase tracking-widest transition-colors ${btn.active ? 'text-[#FF2D55]' : 'text-white/20 group-hover:text-white/60'}`}>
-                                {btn.val}
-                            </span>
-                        </button>
-                    ))}
-                </div>
+                    {/* Mute */}
+                    <button
+                        onClick={(e) => { e.stopPropagation(); setMuted(!muted); }}
+                        className="absolute top-4 right-4 text-white/40 hover:text-white/80 transition-colors"
+                        aria-label="Toggle mute"
+                    >
+                        {muted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+                    </button>
 
-                {/* 3. Bottom Metadata - Clean White Typography */}
-                <div className="absolute left-6 bottom-8 right-16 z-50 pointer-events-none">
-                    <div className="space-y-3">
+                    {/* Bottom meta */}
+                    <div className="absolute left-4 bottom-5 right-4 space-y-1">
                         <div className="flex items-center gap-2">
-                            <span className="text-white font-bold text-xs tracking-tight">
-                                {creator?.displayName || `user_${post.creatorId.slice(0, 4)}`}
+                            <span className="text-[13px] font-semibold text-white leading-none">
+                                {creator?.displayName ?? `user_${post.creatorId?.slice(0, 6)}`}
                             </span>
-                            <div className="w-1 h-1 bg-white/20 rounded-full" />
-                            <span className="text-white/40 text-[10px] font-medium">Follow</span>
+                            {currentUser?.uid !== post.creatorId && (
+                                <button
+                                    onClick={handleFollow}
+                                    disabled={!!isFollowing}
+                                    className="text-[11px] text-white/40 hover:text-white/70 transition-colors disabled:text-white/20"
+                                >
+                                    {isFollowing ? "Following" : "· Follow"}
+                                </button>
+                            )}
                         </div>
-
                         {post.caption && (
-                            <p className="text-white/70 text-[11px] font-medium leading-relaxed line-clamp-2 max-w-[90%]">
+                            <p className="text-[11px] text-white/45 leading-relaxed line-clamp-2">
                                 {post.caption}
                             </p>
                         )}
-
-                        <div className="flex items-center gap-2 pt-1">
-                            <span className="text-white/30 text-[9px] font-bold uppercase tracking-[0.2em] px-2 py-0.5 border border-white/5 rounded-full">Explore</span>
-                        </div>
                     </div>
+                </div>
+
+                {/* TikTok-style right action column */}
+                <div className="flex flex-col items-center gap-5 pb-2">
+
+                    {/* Avatar + follow dot */}
+                    <div className="relative mb-1">
+                        <div className="w-10 h-10 rounded-full overflow-hidden border border-white/10 bg-[#1a1a1a]">
+                            <img src={avatarUrl} alt="" className="w-full h-full object-cover" />
+                        </div>
+                        {currentUser?.uid !== post.creatorId && !isFollowing && (
+                            <button
+                                onClick={handleFollow}
+                                className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-4 h-4 rounded-full bg-white flex items-center justify-center"
+                                aria-label="Follow"
+                            >
+                                <span className="text-black text-[10px] font-bold leading-none">+</span>
+                            </button>
+                        )}
+                    </div>
+
+                    {/* Like */}
+                    <button onClick={handleLike} className="flex flex-col items-center gap-0.5" aria-label="Like">
+                        <Heart
+                            className="w-7 h-7 transition-colors"
+                            style={{ color: liked ? "#f472b6" : "rgba(255,255,255,0.7)", fill: liked ? "#f472b6" : "none" }}
+                        />
+                        <span className="text-[11px] text-white/50 tabular-nums">{likeCount}</span>
+                    </button>
+
+                    {/* Comment */}
+                    <button className="flex flex-col items-center gap-0.5 text-white/70 hover:text-white transition-colors" aria-label="Comment">
+                        <MessageSquare className="w-7 h-7" />
+                        <span className="text-[11px] text-white/50 tabular-nums">{post.engagement?.comments || 0}</span>
+                    </button>
+
+                    {/* Tip */}
+                    <button className="flex flex-col items-center gap-0.5 text-white/70 hover:text-white transition-colors" aria-label="Tip">
+                        <Gem className="w-7 h-7" />
+                        <span className="text-[11px] text-white/50">Tip</span>
+                    </button>
+
+                    {/* Share */}
+                    <button className="flex flex-col items-center gap-0.5 text-white/70 hover:text-white transition-colors" aria-label="Share">
+                        <Share2 className="w-7 h-7" />
+                        <span className="text-[11px] text-white/50">Share</span>
+                    </button>
                 </div>
             </div>
         </div>
