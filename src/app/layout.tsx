@@ -18,6 +18,7 @@ export const metadata: Metadata = {
 };
 
 import { Providers } from "@/components/providers/QueryProvider";
+import { FloatingActions } from "@/components/FloatingActions";
 
 export default function RootLayout({
   children,
@@ -29,6 +30,7 @@ export default function RootLayout({
       <body className="antialiased bg-black min-h-screen">
         <Providers>
           {children}
+          <FloatingActions />
         </Providers>
       </body>
     </html>

@@ -55,6 +55,20 @@ function EmailLoginContent() {
 
             if (isNewUser) {
                 const result = await createUserWithEmailAndPassword(auth, email, password);
+                const { doc, setDoc, serverTimestamp } = await import("firebase/firestore");
+                const { db } = await import("@/lib/firebase/config");
+                await setDoc(doc(db, "users", result.user.uid), {
+                    uid: result.user.uid,
+                    email: result.user.email,
+                    displayName: result.user.displayName || "",
+                    photoURL: null,
+                    createdAt: serverTimestamp(),
+                    updatedAt: serverTimestamp(),
+                    onboardingCompleted: false,
+                    role: "user",
+                    bio: "",
+                    stats: { followers: 0, following: 0, impact: 0 },
+                });
                 setUser({
                     uid: result.user.uid,
                     email: result.user.email,

@@ -9,6 +9,7 @@ import { Post, User } from "@/lib/firebase/collections";
 import { useState, useRef, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
+import { VerifiedBadge } from "../ui/VerifiedBadge";
 
 interface WatchReelProps {
     post: Post & { creator?: User };
@@ -109,7 +110,10 @@ export function WatchReel({ post }: WatchReelProps) {
                             <div className="flex flex-col">
                                 <div className="flex items-center gap-1">
                                     <span className="text-base font-bold text-white">{post.creator?.displayName || post.creator?.username}</span>
-                                    {post.creator?.verified && <CheckCircle2 className="w-4 h-4 text-[#FF2D55] fill-[#FF2D55]/10" />}
+                                    <VerifiedBadge
+                                        showOnCondition={!!(post.creator?.verified || (post.creator?.followers && post.creator.followers >= 1))}
+                                        size={16}
+                                    />
                                 </div>
                                 <span className="text-xs text-white/40">@{post.creator?.username || "user"}</span>
                             </div>

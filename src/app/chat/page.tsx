@@ -16,7 +16,6 @@ import {
 } from "lucide-react";
 import { AgoraCallModal } from "@/components/AgoraCallModal";
 import { Navbar } from "@/components/Navbar";
-import { Sidebar } from "@/components/Sidebar";
 import { ConversationsSidebar } from "@/components/ConversationsSidebar";
 import { useRouter, useSearchParams } from "next/navigation";
 import { db } from "@/lib/firebase/config";
@@ -388,7 +387,7 @@ export default function ChatPage() {
     if (!currentUser?.uid) {
         return (
             <main className="min-h-screen bg-black text-white selection:bg-[#FF2D55]">
-                <Sidebar />
+                
                 <div className="flex-1 flex flex-col">
                     <Navbar />
                     <div className="pt-16 flex flex-col h-screen max-w-2xl mx-auto border-x border-white/10 w-full">
@@ -410,7 +409,7 @@ export default function ChatPage() {
 
     return (
         <main className="min-h-screen bg-[#0d0d0d] text-white selection:bg-[#FF2D55]">
-            <Sidebar />
+            
 
             {callMode && currentUser?.uid && uid && (
                 <AgoraCallModal

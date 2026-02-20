@@ -1,13 +1,14 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Heart, MessageSquare, Share2, DollarSign, Bookmark, CheckCircle2 } from "lucide-react";
+import { Heart, Share2, DollarSign, Bookmark, Download, Pause, Play } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Post, User } from "@/lib/firebase/collections";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
+import { VerifiedBadge } from "../ui/VerifiedBadge";
 
 interface FeedCardProps {
     post: Post & { creator?: User };
@@ -15,6 +16,42 @@ interface FeedCardProps {
 
 export function FeedCard({ post }: FeedCardProps) {
     const [isLiked, setIsLiked] = useState(false);
+    const [isPlaying, setIsPlaying] = useState(true);
+    const videoRef = useRef<HTMLVideoElement>(null);
+
+    const togglePlay = (e: React.MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const video = videoRef.current;
+        if (!video) return;
+        if (video.paused) {
+            video.play();
+            setIsPlaying(true);
+        } else {
+            video.pause();
+            setIsPlaying(false);
+        }
+    };
+
+    const handleDownload = async (e: React.MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (!post.videoUrl) return;
+        try {
+            const res = await fetch(post.videoUrl);
+            const blob = await res.blob();
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `${post.id || "video"}.mp4`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        } catch {
+            window.open(post.videoUrl, "_blank");
+        }
+    };
 
     return (
         <Link href={`/watch/${post.id}`}>
@@ -26,16 +63,27 @@ export function FeedCard({ post }: FeedCardProps) {
                 className="group relative bg-[#16161D] border border-[#27272A] rounded-lg overflow-hidden shadow-sm hover:border-[#FF2D55]/50 transition-all duration-300"
             >
                 {/* Video / Thumbnail */}
-                <div className="relative aspect-[9/16] bg-black">
+                <div
+                    className="relative aspect-[9/16] bg-black"
+                    onClick={togglePlay}
+                >
                     {post.videoUrl ? (
-                        <video
-                            src={post.videoUrl}
-                            className="w-full h-full object-cover"
-                            autoPlay
-                            muted
-                            loop
-                            playsInline
-                        />
+                        <>
+                            <video
+                                ref={videoRef}
+                                src={post.videoUrl}
+                                className="w-full h-full object-cover cursor-pointer"
+                                autoPlay
+                                muted
+                                loop
+                                playsInline
+                            />
+                            {!isPlaying && (
+                                <div className="absolute inset-0 flex items-center justify-center bg-black/30 pointer-events-none">
+                                    <Play className="w-10 h-10 text-white fill-white drop-shadow-lg" />
+                                </div>
+                            )}
+                        </>
                     ) : (
                         <div className="w-full h-full flex items-center justify-center text-white/20">
                             {post.cloudinaryPublicId ? (
@@ -80,9 +128,10 @@ export function FeedCard({ post }: FeedCardProps) {
                                     <span className="text-xs font-bold text-white leading-none">
                                         {post.creator?.displayName || post.creator?.username || "Unknown"}
                                     </span>
-                                    {post.creator?.verified && (
-                                        <CheckCircle2 className="w-3 h-3 text-[#FF2D55] fill-[#FF2D55]/20" />
-                                    )}
+                                    <VerifiedBadge
+                                        showOnCondition={!!(post.creator?.verified || (post.creator?.followers && post.creator.followers >= 1))}
+                                        size={12}
+                                    />
                                 </div>
                                 <span className="text-[10px] text-white/40 leading-none mt-1">
                                     @{post.creator?.username || "user"}
@@ -123,6 +172,14 @@ export function FeedCard({ post }: FeedCardProps) {
                         </div>
                         <div className="flex items-center gap-3">
                             <button
+                                onClick={togglePlay}
+                                className="text-white/30 hover:text-white transition-colors"
+                            >
+                                {isPlaying
+                                    ? <Pause className="w-4 h-4" />
+                                    : <Play className="w-4 h-4" />}
+                            </button>
+                            <button
                                 onClick={(e) => {
                                     e.preventDefault();
                                     e.stopPropagation();
@@ -140,6 +197,14 @@ export function FeedCard({ post }: FeedCardProps) {
                             >
                                 <Bookmark className="w-4 h-4" />
                             </button>
+                            {post.videoUrl && (
+                                <button
+                                    onClick={handleDownload}
+                                    className="text-white/30 hover:text-white transition-colors"
+                                >
+                                    <Download className="w-4 h-4" />
+                                </button>
+                            )}
                         </div>
                     </div>
                 </div>

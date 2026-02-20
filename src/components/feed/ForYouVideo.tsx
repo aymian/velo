@@ -66,6 +66,7 @@ export const ForYouVideo = ({ post, isActive }: ForYouVideoProps) => {
                         price={post.price || 0}
                         caption={post.caption}
                         blurEnabled={post.blurEnabled}
+                        tags={post.tags}
                     />
 
                     {/* Scrim */}

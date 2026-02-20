@@ -5,14 +5,23 @@ import { collection, query, orderBy, limit, startAfter, getDocs, doc, getDoc } f
 import { db } from "@/lib/firebase/config";
 import { COLLECTIONS, Post, User } from "@/lib/firebase/collections";
 import { FeedCard } from "./FeedCard";
-import { useEffect, useRef } from "react";
+import { FeedSkeleton } from "../FeedSkeleton";
+import React, { useState, useEffect, useRef } from "react";
 import { Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
 
 export function ContentFeed() {
     const sentinelRef = useRef<HTMLDivElement>(null);
 
+    // UI Force Load State (as requested "like 20 seconds")
+    const [forceLoading, setForceLoading] = useState(true);
+    useEffect(() => {
+        const timer = setTimeout(() => setForceLoading(false), 20000);
+        return () => clearTimeout(timer);
+    }, []);
+
     const fetchPosts = async ({ pageParam }: { pageParam: any }) => {
+        // ... rest of fetchPosts
         try {
             let postsQuery = query(
                 collection(db, COLLECTIONS.POSTS),
@@ -82,13 +91,8 @@ export function ContentFeed() {
         return () => observer.disconnect();
     }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
-    if (status === "pending") {
-        return (
-            <div className="flex flex-col items-center justify-center p-20 gap-4">
-                <Loader2 className="w-10 h-10 text-[#FF2D55] animate-spin" />
-                <span className="text-white/40 text-sm font-medium animate-pulse">Loading amazing content...</span>
-            </div>
-        );
+    if (status === "pending" || forceLoading) {
+        return <FeedSkeleton />;
     }
 
     return (

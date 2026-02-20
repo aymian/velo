@@ -8,15 +8,14 @@ import { getStorage, Storage } from 'firebase-admin/storage';
 
 // Admin SDK configuration
 const adminConfig = {
-    projectId: "mora-4b89d",
+    projectId: "veeloo-45e00",
     // For production, use service account credentials from environment variables
     // credential: cert({
     //   projectId: process.env.FIREBASE_PROJECT_ID,
     //   clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
     //   privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
     // }),
-    databaseURL: "https://mora-4b89d-default-rtdb.firebaseio.com",
-    storageBucket: "mora-4b89d.firebasestorage.app",
+    storageBucket: "veeloo-45e00.firebasestorage.app",
 };
 
 // Initialize Admin SDK (singleton pattern)

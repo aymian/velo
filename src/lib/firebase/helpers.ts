@@ -20,8 +20,10 @@ import {
     increment,
     writeBatch
 } from 'firebase/firestore';
-import { db } from './config';
+import { ref, set, update, increment as rtIncrement } from 'firebase/database';
+import { db, rtdb } from './config';
 import { COLLECTIONS } from './collections';
+import { User } from 'firebase/auth';
 
 // Generic function to get a document by ID
 export async function getDocument<T = DocumentData>(
@@ -114,6 +116,14 @@ export async function deleteDocument(
 }
 
 // User-specific helpers
+export async function getUserByUsername(username: string) {
+    const users = await getDocuments(COLLECTIONS.USERS, [
+        where('username', '==', username),
+        limit(1)
+    ]);
+    return users.length > 0 ? users[0] as User : null;
+}
+
 export async function getUserById(userId: string) {
     return getDocument(COLLECTIONS.USERS, userId);
 }
@@ -243,6 +253,84 @@ export async function getFollowing(userId: string) {
         COLLECTIONS.FOLLOWS,
         [where('followerId', '==', userId)]
     );
+}
+
+// Like and Comment helpers
+export async function toggleLikePost(userId: string, postId: string) {
+    const likeId = `${userId}_${postId}`;
+    const likeRef = doc(db, COLLECTIONS.LIKES, likeId);
+    const postRef = doc(db, COLLECTIONS.POSTS, postId);
+    const rtEngagementRef = ref(rtdb, `engagement/posts/${postId}`);
+
+    const likeDoc = await getDoc(likeRef);
+    const batch = writeBatch(db);
+
+    if (likeDoc.exists()) {
+        // Unlike
+        batch.delete(likeRef);
+        batch.update(postRef, {
+            'engagement.likes': increment(-1),
+            updatedAt: serverTimestamp()
+        });
+        // Sync to RTDB
+        await update(rtEngagementRef, {
+            likes: rtIncrement(-1)
+        });
+    } else {
+        // Like
+        batch.set(likeRef, {
+            userId,
+            targetId: postId,
+            targetType: 'post',
+            createdAt: serverTimestamp()
+        });
+        batch.update(postRef, {
+            'engagement.likes': increment(1),
+            updatedAt: serverTimestamp()
+        });
+        // Sync to RTDB
+        await update(rtEngagementRef, {
+            likes: rtIncrement(1)
+        });
+    }
+
+    return batch.commit();
+}
+
+export async function checkIfUserLikedPost(userId: string, postId: string) {
+    const likeId = `${userId}_${postId}`;
+    const likeRef = doc(db, COLLECTIONS.LIKES, likeId);
+    const likeSnap = await getDoc(likeRef);
+    return likeSnap.exists();
+}
+
+export async function addComment(userId: string, postId: string, content: string) {
+    const batch = writeBatch(db);
+    const commentRef = doc(collection(db, COLLECTIONS.COMMENTS));
+    const postRef = doc(db, COLLECTIONS.POSTS, postId);
+    const rtEngagementRef = ref(rtdb, `engagement/posts/${postId}`);
+
+    batch.set(commentRef, {
+        postId,
+        userId,
+        content,
+        likes: 0,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+    });
+
+    batch.update(postRef, {
+        'engagement.comments': increment(1),
+        updatedAt: serverTimestamp()
+    });
+
+    // Sync to RTDB
+    await update(rtEngagementRef, {
+        comments: rtIncrement(1)
+    });
+
+    await batch.commit();
+    return commentRef.id;
 }
 
 // Convert Firestore Timestamp to Date

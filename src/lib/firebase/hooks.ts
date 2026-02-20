@@ -1,28 +1,44 @@
 // React Query Hooks for Firebase
 // Custom hooks using TanStack Query for data fetching with caching
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
-  getUserById,
-  createUser,
-  updateUser,
-  getPostById,
+  useQuery,
+  useMutation,
+  useQueryClient,
+  useInfiniteQuery,
+} from '@tanstack/react-query';
+import { onValue, ref as rtRef } from 'firebase/database';
+import { db, rtdb } from './config';
+import {
+  getDocument,
+  getDocuments,
+  getUserByUsername,
   getUserPosts,
-  createPost,
-  updatePost,
-  deletePost,
+  checkFollowing,
   followUser,
   unfollowUser,
   getFollowers,
   getFollowing,
-  checkFollowing
+  toggleLikePost,
+  checkIfUserLikedPost,
+  addComment,
+  createPost,
+  createUser,
+  deletePost,
+  getPostById,
+  getUserById,
+  updatePost,
+  updateUser
 } from './helpers';
+import React from 'react';
 
 // Query keys
 export const QUERY_KEYS = {
   user: (userId: string) => ['user', userId],
+  userByUsername: (username: string) => ['user', 'username', username],
   userPosts: (userId: string) => ['userPosts', userId],
   post: (postId: string) => ['post', postId],
+  postLiked: (userId: string, postId: string) => ['postLiked', userId, postId],
   followers: (userId: string) => ['followers', userId],
   following: (userId: string) => ['following', userId],
 } as const;
@@ -34,6 +50,15 @@ export function useUser(userId: string) {
     queryFn: () => getUserById(userId),
     enabled: !!userId,
     staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+}
+
+export function useUserByUsername(username: string) {
+  return useQuery({
+    queryKey: QUERY_KEYS.userByUsername(username),
+    queryFn: () => getUserByUsername(username),
+    enabled: !!username,
+    staleTime: 5 * 60 * 1000,
   });
 }
 
@@ -164,4 +189,59 @@ export function useUnfollowUser() {
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.following(followerId) });
     },
   });
+}
+
+// Like and Comment hooks
+export function usePostLiked(userId: string | undefined, postId: string) {
+  return useQuery({
+    queryKey: QUERY_KEYS.postLiked(userId || '', postId),
+    queryFn: () => checkIfUserLikedPost(userId!, postId),
+    enabled: !!userId && !!postId,
+  });
+}
+
+export function useToggleLike() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ userId, postId }: { userId: string; postId: string }) =>
+      toggleLikePost(userId, postId),
+    onSuccess: (_, { userId, postId }) => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.postLiked(userId, postId) });
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.post(postId) });
+    },
+  });
+}
+
+export function useAddComment() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ userId, postId, content }: { userId: string; postId: string; content: string }) =>
+      addComment(userId, postId, content),
+    onSuccess: (_, { postId }) => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.post(postId) });
+    },
+  });
+}
+
+export function usePostEngagement(postId: string) {
+  const [engagement, setEngagement] = React.useState({ likes: 0, comments: 0 });
+
+  React.useEffect(() => {
+    if (!postId) return;
+    const engagementRef = rtRef(rtdb, `engagement/posts/${postId}`);
+    const unsubscribe = onValue(engagementRef, (snapshot) => {
+      if (snapshot.exists()) {
+        const data = snapshot.val();
+        setEngagement({
+          likes: data.likes || 0,
+          comments: data.comments || 0
+        });
+      }
+    });
+    return () => unsubscribe();
+  }, [postId]);
+
+  return engagement;
 }

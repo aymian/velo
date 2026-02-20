@@ -4,7 +4,6 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
     Search,
     X,
-    CheckCircle2,
     ArrowUpRight,
     Play,
     Hash,
@@ -22,6 +21,7 @@ import { collection, query, where, getDocs, limit, orderBy, startAt, endAt } fro
 import { COLLECTIONS } from "@/lib/firebase/collections";
 import { useRouter } from "next/navigation";
 import { useSearchStore } from "@/lib/store";
+import { VerifiedBadge } from "./ui/VerifiedBadge";
 
 interface SearchOverlayProps {
     isOpen: boolean;
@@ -46,7 +46,6 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
     const router = useRouter();
     const { recentSearches, addSearch, removeSearch, clearRecent } = useSearchStore();
 
-    // Fetch top creators by followers on first open
     useEffect(() => {
         if (!isOpen || topCreators.length > 0) return;
         const fetchTop = async () => {
@@ -59,11 +58,11 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
                 const snap = await getDocs(q);
                 setTopCreators(snap.docs.map(d => ({ id: d.id, ...d.data() })));
             } catch {
-                // silently fail — Firestore index may not exist yet
+                // silently fail 
             }
         };
         fetchTop();
-    }, [isOpen]);
+    }, [isOpen, topCreators.length]);
 
     useEffect(() => {
         if (!isOpen) {
@@ -81,7 +80,6 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
             setIsLoading(true);
             try {
                 const term = searchTerm.toLowerCase();
-
                 const qCreators = query(
                     collection(db, COLLECTIONS.USERS),
                     orderBy("username"),
@@ -89,21 +87,17 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
                     endAt(term + "\uf8ff"),
                     limit(5)
                 );
-
                 const qPosts = query(
                     collection(db, COLLECTIONS.POSTS),
                     where("status", "==", "ready"),
                     limit(10)
                 );
-
                 const [uSnap, pSnap] = await Promise.all([getDocs(qCreators), getDocs(qPosts)]);
-
                 const creators = uSnap.docs.map(d => ({ id: d.id, ...d.data() }));
                 const posts = pSnap.docs
                     .map(d => ({ id: d.id, ...d.data() }))
                     .filter((p: any) => p.caption?.toLowerCase().includes(term))
                     .slice(0, 4);
-
                 setResults({ creators, posts });
             } catch (error) {
                 console.error("Search error:", error);
@@ -111,7 +105,6 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
                 setIsLoading(false);
             }
         };
-
         const debounce = setTimeout(performSearch, 200);
         return () => clearTimeout(debounce);
     }, [searchTerm]);
@@ -143,10 +136,7 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
         <Tooltip.Provider delayDuration={300}>
             <Dialog.Root open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
                 <Dialog.Portal>
-                    {/* Backdrop */}
                     <Dialog.Overlay className="fixed inset-0 z-[100] bg-black/85 backdrop-blur-md data-[state=open]:animate-in data-[state=open]:fade-in data-[state=closed]:fade-out" />
-
-                    {/* Modal */}
                     <Dialog.Content
                         onOpenAutoFocus={(e) => {
                             e.preventDefault();
@@ -157,8 +147,6 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
                     >
                         <Dialog.Title className="sr-only">Search Velo</Dialog.Title>
                         <div className="bg-[#0c0c0c] border border-white/[0.06] rounded-[28px] overflow-hidden shadow-[0_40px_120px_rgba(255,59,92,0.08),0_0_0_1px_rgba(255,255,255,0.03)]">
-
-                            {/* ─── Search Input Bar ─── */}
                             <div className="relative flex items-center gap-3 px-5 py-4">
                                 <div className="flex items-center justify-center w-10 h-10 rounded-2xl bg-gradient-to-br from-[#ff3b5c]/10 to-[#a855f7]/10 border border-[#ff3b5c]/10 shrink-0">
                                     <Search className="w-[18px] h-[18px] text-[#ff3b5c]" strokeWidth={2} />
@@ -192,15 +180,11 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
 
                             <Separator.Root className="h-px bg-gradient-to-r from-transparent via-[#ff3b5c]/15 to-transparent" />
 
-                            {/* ─── Content Area ─── */}
                             <ScrollArea.Root className="max-h-[62vh]">
                                 <ScrollArea.Viewport className="w-full max-h-[62vh] overflow-y-auto">
                                     <div className="p-3">
-
-                                        {/* ═══ IDLE STATE: Discover ═══ */}
                                         {!searchTerm && (
                                             <>
-                                                {/* Recent Searches */}
                                                 {recentSearches.length > 0 && (
                                                     <div className="mb-3">
                                                         <div className="flex items-center justify-between px-3 py-2">
@@ -236,7 +220,6 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
                                                     </div>
                                                 )}
 
-                                                {/* Trending Tags */}
                                                 <div className="mb-4">
                                                     <div className="flex items-center gap-2 px-3 py-2">
                                                         <Flame className="w-3 h-3 text-[#ff3b5c]/40" />
@@ -268,7 +251,6 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
 
                                                 <Separator.Root className="h-px bg-white/[0.03] mx-3 mb-3" />
 
-                                                {/* Top Creators by Followers */}
                                                 <div>
                                                     <div className="flex items-center gap-2 px-3 py-2">
                                                         <TrendingUp className="w-3 h-3 text-[#a855f7]/40" />
@@ -277,7 +259,7 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
                                                     <div className="space-y-0.5 px-1">
                                                         {topCreators.length === 0 && (
                                                             <>
-                                                                {[1,2,3].map(i => (
+                                                                {[1, 2, 3].map(i => (
                                                                     <div key={i} className="flex items-center gap-3.5 px-3 py-2.5">
                                                                         <div className="w-9 h-9 rounded-full bg-white/[0.03] animate-pulse shrink-0" />
                                                                         <div className="flex-1 space-y-1.5">
@@ -305,7 +287,10 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
                                                                         <span className="text-[13px] font-semibold text-white/50 group-hover:text-white transition-colors truncate">
                                                                             {u.username ? `@${u.username}` : u.displayName || "Creator"}
                                                                         </span>
-                                                                        {u.verified && <CheckCircle2 className="w-3 h-3 text-[#ff3b5c] shrink-0" />}
+                                                                        <VerifiedBadge
+                                                                            showOnCondition={!!(u.verified || (u.followers && u.followers >= 1))}
+                                                                            size={12}
+                                                                        />
                                                                     </div>
                                                                     <span className="text-[10px] font-medium text-[#a855f7]/40">
                                                                         {u.followers != null
@@ -321,10 +306,8 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
                                             </>
                                         )}
 
-                                        {/* ═══ ACTIVE SEARCH RESULTS ═══ */}
                                         {searchTerm && (
                                             <>
-                                                {/* Creators */}
                                                 {results.creators.length > 0 && (
                                                     <div className="mb-2">
                                                         <div className="flex items-center gap-2 px-3 py-2">
@@ -349,7 +332,10 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
                                                                     <div className="flex-1 min-w-0">
                                                                         <div className="flex items-center gap-1.5">
                                                                             <span className="text-[13px] font-semibold text-white/80 truncate group-hover:text-white transition-colors">@{u.username}</span>
-                                                                            {u.verified && <CheckCircle2 className="w-3 h-3 text-[#ff3b5c]" />}
+                                                                            <VerifiedBadge
+                                                                                showOnCondition={!!(u.verified || (u.followers && u.followers >= 1))}
+                                                                                size={14}
+                                                                            />
                                                                         </div>
                                                                         <span className="text-[10px] font-medium text-white/15">View profile</span>
                                                                     </div>
@@ -364,7 +350,6 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
                                                     <Separator.Root className="h-px bg-white/[0.03] mx-3 my-2" />
                                                 )}
 
-                                                {/* Posts */}
                                                 {results.posts.length > 0 && (
                                                     <div>
                                                         <div className="flex items-center gap-2 px-3 py-2">
@@ -394,7 +379,6 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
                                                     </div>
                                                 )}
 
-                                                {/* No results */}
                                                 {!isLoading && !hasResults && (
                                                     <div className="py-16 flex flex-col items-center justify-center text-center">
                                                         <div className="w-14 h-14 rounded-full bg-gradient-to-br from-[#ff3b5c]/10 to-[#a855f7]/10 border border-white/[0.04] flex items-center justify-center mb-4">
@@ -416,7 +400,6 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
                                 </ScrollArea.Scrollbar>
                             </ScrollArea.Root>
 
-                            {/* ─── Footer Hint ─── */}
                             <Separator.Root className="h-px bg-white/[0.03]" />
                             <div className="flex items-center justify-between px-5 py-3">
                                 <div className="flex items-center gap-4">

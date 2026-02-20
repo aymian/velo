@@ -21,8 +21,6 @@ interface AuthState {
     signUp: (email: string) => Promise<{ error: any }>;
 }
 
-import { supabase } from './supabase';
-
 export const useAuthStore = create<AuthState>()(
     persist(
         (set) => ({
@@ -33,21 +31,21 @@ export const useAuthStore = create<AuthState>()(
             clearUser: () => set({ user: null, isAuthenticated: false, isLoading: false }),
             setLoading: (loading) => set({ isLoading: loading }),
             signUp: async (email: string) => {
-                // Simple passwordless signup (magic link) as requested "confirm url"
-                // The user said "confirm url", usually implies Magic Link or Email Confirmation.
-                // We'll use magic link/OTP for simplicity unless password is required. 
-                // Assuming Magic Link for now based on "send confirm url".
-
-                const returnUrl = typeof window !== 'undefined' ? `${window.location.origin}/verify` : 'http://localhost:3000/verify';
-
-                const { error } = await supabase.auth.signInWithOtp({
-                    email,
-                    options: {
-                        emailRedirectTo: returnUrl,
-                    },
-                });
-
-                return { error };
+                try {
+                    const { sendSignInLinkToEmail } = await import('firebase/auth');
+                    const { auth } = await import('@/lib/firebase/config');
+                    const actionCodeSettings = {
+                        url: typeof window !== 'undefined' ? `${window.location.origin}/verify` : 'http://localhost:3000/verify',
+                        handleCodeInApp: true,
+                    };
+                    await sendSignInLinkToEmail(auth, email, actionCodeSettings);
+                    if (typeof window !== 'undefined') {
+                        window.localStorage.setItem('emailForSignIn', email);
+                    }
+                    return { error: null };
+                } catch (error) {
+                    return { error };
+                }
             }
         }),
         {
@@ -248,12 +246,15 @@ interface SearchState {
     addSearch: (query: string) => void;
     removeSearch: (query: string) => void;
     clearRecent: () => void;
+    isOpen: boolean;
+    setOpen: (open: boolean) => void;
 }
 
 export const useSearchStore = create<SearchState>()(
     persist(
         (set) => ({
             recentSearches: [],
+            isOpen: false,
             addSearch: (query) => set((state) => ({
                 recentSearches: [query, ...state.recentSearches.filter(q => q !== query)].slice(0, 10)
             })),
@@ -261,6 +262,7 @@ export const useSearchStore = create<SearchState>()(
                 recentSearches: state.recentSearches.filter(q => q !== query)
             })),
             clearRecent: () => set({ recentSearches: [] }),
+            setOpen: (open) => set({ isOpen: open }),
         }),
         {
             name: 'velo-search-storage',

@@ -6,23 +6,24 @@ import { getAuth, Auth } from "firebase/auth";
 import { getFirestore, Firestore } from "firebase/firestore";
 import { getStorage, FirebaseStorage } from "firebase/storage";
 import { getAnalytics, Analytics } from "firebase/analytics";
+import { getDatabase, Database } from "firebase/database";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
-    apiKey: "AIzaSyBpZ5YXe-_PKvSPsdoU5ffjRal8fnV6_VA",
-    authDomain: "mora-4b89d.firebaseapp.com",
-    databaseURL: "https://mora-4b89d-default-rtdb.firebaseio.com",
-    projectId: "mora-4b89d",
-    storageBucket: "mora-4b89d.firebasestorage.app",
-    messagingSenderId: "758534233604",
-    appId: "1:758534233604:web:b66a44293cdfc844525f51",
-    measurementId: "G-8YLCRE5T9X"
+  apiKey: "AIzaSyCDsNH9Z8OMz2S2O4wHO-XWBOZ5UYv0Tg4",
+  authDomain: "veeloo-45e00.firebaseapp.com",
+  projectId: "veeloo-45e00",
+  storageBucket: "veeloo-45e00.firebasestorage.app",
+  messagingSenderId: "994308701230",
+  appId: "1:994308701230:web:af4ea89129d489052f33bf",
+  measurementId: "G-MLZV8L44L6"
 };
 
 // Initialize Firebase (singleton pattern to prevent multiple initializations)
 let app: FirebaseApp;
 let auth: Auth;
 let db: Firestore;
+let rtdb: Database;
 let storage: FirebaseStorage;
 let analytics: Analytics | null = null;
 
@@ -30,6 +31,7 @@ if (!getApps().length) {
     app = initializeApp(firebaseConfig);
     auth = getAuth(app);
     db = getFirestore(app);
+    rtdb = getDatabase(app);
     storage = getStorage(app);
 
     if (typeof window !== 'undefined') {
@@ -39,8 +41,9 @@ if (!getApps().length) {
     app = getApps()[0];
     auth = getAuth(app);
     db = getFirestore(app);
+    rtdb = getDatabase(app);
     storage = getStorage(app);
 }
 
-export { app, auth, db, storage, analytics };
+export { app, auth, db, rtdb, storage, analytics };
 export default app;

@@ -15,6 +15,7 @@ import {
     Image as ImageIcon,
     Layout,
     Columns,
+    Shield
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/lib/store";
@@ -47,6 +48,43 @@ export default function ProfilePage() {
         { id: "collections", label: "Collections", icon: Gift },
     ], []);
 
+    const VerificationBadge = ({ status }: { status?: 'unverified' | 'pending' | 'verified' }) => {
+        if (status === 'verified') {
+            return (
+                <motion.div
+                    whileHover={{ scale: 1.05 }}
+                    onClick={() => router.push('/verify')}
+                    className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-purple-500/10 border border-purple-500/20 cursor-pointer shadow-[0_0_15px_rgba(168,85,247,0.2)] transition-all"
+                >
+                    <Shield className="w-3 h-3 text-purple-400 fill-purple-400/20" />
+                    <span className="text-[9px] font-bold text-purple-400 uppercase tracking-widest leading-none">Verified</span>
+                </motion.div>
+            );
+        }
+
+        if (status === 'pending') {
+            return (
+                <div
+                    onClick={() => router.push('/verify?status=pending')}
+                    className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-yellow-500/10 border border-yellow-500/20 cursor-pointer transition-all"
+                >
+                    <Shield className="w-3 h-3 text-yellow-400" />
+                    <span className="text-[9px] font-bold text-yellow-400 uppercase tracking-widest leading-none">Pending</span>
+                </div>
+            );
+        }
+
+        return (
+            <div
+                onClick={() => router.push('/verify')}
+                className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-white/5 border border-white/10 cursor-pointer hover:bg-white/10 transition-all opacity-40 hover:opacity-100"
+            >
+                <Shield className="w-3 h-3 text-white/60" />
+                <span className="text-[9px] font-bold text-white/60 uppercase tracking-widest leading-none">Verify Now</span>
+            </div>
+        );
+    };
+
     return (
         <div className="min-h-screen bg-black text-white selection:bg-[#ff3b5c]">
             <Navbar />
@@ -71,7 +109,10 @@ export default function ProfilePage() {
                     <div className="flex-1 pt-2">
                         <div className="flex items-start justify-between mb-1">
                             <div>
-                                <h1 className="text-[20px] font-semibold leading-tight mb-0.5">{user?.displayName || "Funny Badger"}</h1>
+                                <div className="flex items-center gap-3 mb-0.5">
+                                    <h1 className="text-[20px] font-semibold leading-tight">{user?.displayName || "Funny Badger"}</h1>
+                                    <VerificationBadge status={user?.verificationStatus || 'unverified'} />
+                                </div>
                                 <p className="text-white/40 text-[13px]">Rwanda, 19 y.o.</p>
                             </div>
                             <div className="flex items-center gap-5 pt-1">
@@ -171,6 +212,7 @@ export default function ProfilePage() {
                                         price={post.price || 0}
                                         caption={post.caption}
                                         blurEnabled={post.blurEnabled}
+                                        tags={post.tags}
                                     />
                                 </div>
                             ))}

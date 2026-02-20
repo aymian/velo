@@ -17,9 +17,9 @@ import {
   Mail,
   ShoppingBag
 } from "lucide-react";
-import { useAuthStore } from "@/lib/store";
+import { useAuthStore, useSearchStore } from "@/lib/store";
 import { useOnboardingStore } from "@/store/onboarding-store";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { UserDropdown } from "./UserDropdown";
 import { SearchOverlay } from "./SearchOverlay";
 import { ChatModal } from "./ChatModal";
@@ -27,20 +27,18 @@ import { cn } from "@/lib/utils";
 
 export function Navbar() {
   const router = useRouter();
+  const pathname = usePathname();
   const { user, isAuthenticated, clearUser } = useAuthStore();
+  const { isOpen: isSearchOpen, setOpen: setIsSearchOpen } = useSearchStore();
   const { coins } = useOnboardingStore();
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
 
   const navItems = [
-    { name: "For You", icon: ThumbsUp, href: "/for-you" },
+    { name: "For You", icon: ThumbsUp, href: "/" },
     { name: "Following", icon: Users, href: "/following" },
     { name: "Explore", icon: Compass, href: "/explore" },
-    { name: "Chats", icon: Send, href: "/chat", badge: 1 },
-    { name: "About", icon: Info, href: "/about" },
-    { name: "Contact", icon: Mail, href: "/contact" },
   ];
 
   useEffect(() => {
@@ -72,17 +70,18 @@ export function Navbar() {
         {navItems.map((item) => {
           const Icon = item.icon;
           const isHovered = hoveredItem === item.name;
+          const isActive = pathname === item.href;
 
           return (
             <div
               key={item.name}
-              className="relative flex flex-col items-center gap-1 py-1 px-3 group cursor-pointer"
+              className="relative flex flex-col items-center gap-1 py-1 px-3 group cursor-pointer h-full justify-center"
               onMouseEnter={() => setHoveredItem(item.name)}
               onMouseLeave={() => setHoveredItem(null)}
               onClick={() => {
                 if (item.name === "Chats") {
                   setIsChatOpen(!isChatOpen);
-                } else {
+                } else if (pathname !== item.href) {
                   router.push(item.href);
                 }
               }}
@@ -92,7 +91,7 @@ export function Navbar() {
                   className={cn(
                     "w-[22px] h-[22px] transition-all duration-300",
                     item.name === "Chats" && "-rotate-12 translate-x-0.5",
-                    (isHovered || (item.name === "Chats" && isChatOpen)) ? "text-white" : "text-white/50"
+                    (isHovered || isActive || (item.name === "Chats" && isChatOpen)) ? "text-white" : "text-white/50"
                   )}
                   strokeWidth={1.8}
                 />
@@ -103,10 +102,20 @@ export function Navbar() {
                 )}
               </div>
 
-              <span className={`text-[10px] font-medium tracking-wide transition-all duration-300 ${(isHovered || (item.name === "Chats" && isChatOpen)) ? "text-white" : "text-white/30"
+              <span className={`text-[10px] font-medium tracking-wide transition-all duration-300 ${(isHovered || isActive || (item.name === "Chats" && isChatOpen)) ? "text-white" : "text-white/30"
                 }`}>
                 {item.name}
               </span>
+
+              {/* Active Underline */}
+              {(isActive || (item.name === "Chats" && isChatOpen)) && (
+                <motion.div
+                  layoutId="navUnderline"
+                  className="absolute bottom-0 left-3 right-3 h-0.5 bg-gradient-to-r from-[#ff4081] to-[#7c4dff] rounded-full"
+                  initial={false}
+                  transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                />
+              )}
             </div>
           );
         })}

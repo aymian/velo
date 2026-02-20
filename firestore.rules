@@ -97,9 +97,27 @@ service cloud.firestore {
     // Calls (WebRTC signaling)
     match /calls/{callId} {
       allow read, write: if isSignedIn();
-      match /candidates/{candidateId} {
+      match /{candidatesCol}/{candidateId} {
         allow read, write: if isSignedIn();
       }
+    }
+
+    // AI conversations
+    match /ai_conversations/{docId} {
+      allow read, update, delete: if isSignedIn() && resource.data.uid == request.auth.uid;
+      allow create: if isSignedIn() && request.resource.data.uid == request.auth.uid;
+    }
+
+    // User settings (preferences, toggles, etc.)
+    match /user_settings/{userId} {
+      allow read, write: if isSignedIn() && isOwner(userId);
+    }
+
+    // User reports / support messages
+    match /user_reports/{reportId} {
+      allow create: if isSignedIn() && request.resource.data.uid == request.auth.uid;
+      allow read: if false;
+      allow update, delete: if false;
     }
 
     // --- Legacy / Compatibility ---

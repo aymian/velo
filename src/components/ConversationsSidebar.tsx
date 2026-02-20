@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { collection, onSnapshot, query, orderBy, getDoc, doc } from "firebase/firestore";
+import { collection, onSnapshot, query, orderBy, getDoc, doc, where } from "firebase/firestore";
 import { db } from "@/lib/firebase/config";
 import { COLLECTIONS, User as UserType } from "@/lib/firebase/collections";
 import { useAuthStore } from "@/lib/store";
@@ -75,9 +75,8 @@ function ConversationRow({ conv, currentUid, isActive, onClick }: ConversationRo
     return (
         <button
             onClick={onClick}
-            className={`w-full flex items-center gap-3 px-4 py-3 transition-colors text-left ${
-                isActive ? "bg-white/[0.06]" : "hover:bg-white/[0.03]"
-            }`}
+            className={`w-full flex items-center gap-3 px-4 py-3 transition-colors text-left ${isActive ? "bg-white/[0.06]" : "hover:bg-white/[0.03]"
+                }`}
         >
             {/* Avatar */}
             <div className="relative shrink-0">
@@ -118,7 +117,11 @@ export function ConversationsSidebar() {
     useEffect(() => {
         if (!currentUser?.uid) return;
 
-        const q = query(collection(db, "conversations"), orderBy("lastMessageAt", "desc"));
+        const q = query(
+            collection(db, "conversations"),
+            where("participants", "array-contains", currentUser.uid),
+            orderBy("lastMessageAt", "desc")
+        );
 
         const unsub = onSnapshot(q, (snap) => {
             const items: ConversationItem[] = [];

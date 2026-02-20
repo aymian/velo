@@ -6,15 +6,78 @@
   --color-primary-foreground: #FFFFFF;
 
   /* Velo High-Contrast Flat Dark Background */
-  --color-background: #050505;
+  --color-background: #0d0d0d;
   --color-foreground: #FFFFFF;
   --color-surface: #111111;
   --color-surface-hover: #1A1A1A;
+  --color-black: #0d0d0d;
 
   /* Compact Flat Density */
   --radius-lg: 2rem;
   --radius-md: 1rem;
   --radius-sm: 0.5rem;
+}
+
+/* ── react-phone-number-input dark theme ── */
+.velo-phone-input {
+  display: flex;
+  align-items: center;
+  background: #111;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 12px;
+  padding: 0 14px;
+  height: 48px;
+  gap: 8px;
+  transition: border-color 0.15s;
+}
+.velo-phone-input:focus-within {
+  border-color: rgba(255,45,85,0.5);
+}
+.velo-phone-input .PhoneInputCountry {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.velo-phone-input .PhoneInputCountrySelect {
+  background: transparent;
+  border: none;
+  color: rgba(255,255,255,0.6);
+  font-size: 13px;
+  outline: none;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  width: 20px;
+  opacity: 0;
+  position: absolute;
+}
+.velo-phone-input .PhoneInputCountrySelectArrow {
+  color: rgba(255,255,255,0.4);
+  width: 10px;
+  height: 10px;
+}
+.velo-phone-input .PhoneInputCountryIcon {
+  width: 22px;
+  height: 16px;
+  border-radius: 2px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.velo-phone-input .PhoneInputCountryIcon--border {
+  box-shadow: none;
+}
+.velo-phone-input input[type="tel"] {
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #fff;
+  font-size: 15px;
+  flex: 1;
+  min-width: 0;
+}
+.velo-phone-input input[type="tel"]::placeholder {
+  color: rgba(255,255,255,0.25);
 }
 
 /* Surgical UI Utilities */

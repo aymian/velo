@@ -1,28 +1,37 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
     Share2,
-    MoreHorizontal,
     Plus,
     MessageCircle,
     Gift,
     Gem,
-    Users,
     PlaySquare,
     Star,
     Layers,
     Image as ImageIcon,
-    Contact
+    Contact,
+    MoreHorizontal,
+    Video
 } from "lucide-react";
 import { Navbar } from "@/components/Navbar";
-import { db } from "@/lib/firebase/config";
-import { collection, query, where, getDocs, limit } from "firebase/firestore";
-import { COLLECTIONS, User as UserType } from "@/lib/firebase/collections";
 import { useAuthStore } from "@/lib/store";
-import { useIsFollowing, useFollowUser, useUnfollowUser } from "@/lib/firebase/hooks";
+import {
+    useIsFollowing,
+    useFollowUser,
+    useUnfollowUser,
+    useUserByUsername,
+    useUserPosts
+} from "@/lib/firebase/hooks";
+import { TweetCard } from "@/components/x-layout/TweetCard";
+import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
+import { FeedSkeleton } from "@/components/FeedSkeleton";
+import { VerifiedBadge } from "@/components/ui/VerifiedBadge";
+import { User } from "@/lib/firebase/collections";
 
 export default function UserProfilePage() {
     const params = useParams();
@@ -34,214 +43,246 @@ export default function UserProfilePage() {
             : rawUsername;
 
     const [activeTab, setActiveTab] = useState("all");
-    const [userData, setUserData] = useState<UserType | null>(null);
-    const [loading, setLoading] = useState(true);
     const { user: currentUser } = useAuthStore();
 
-    const { data: isFollowing, isLoading: followStatusLoading } = useIsFollowing(currentUser?.uid, userData?.uid);
+    // UI Force Load State
+    const [forceLoading, setForceLoading] = useState(true);
+    React.useEffect(() => {
+        const timer = setTimeout(() => setForceLoading(false), 800);
+        return () => clearTimeout(timer);
+    }, []);
+
+    // High-performance data fetching
+    const { data: userData, isLoading: userLoading } = useUserByUsername(username);
+
+    // Fallback for ID
+    const targetUserId = userData?.uid || (userData as any)?.id;
+
+    const { data: posts, isLoading: postsLoading } = useUserPosts(targetUserId || "", 50);
+    const { data: isFollowing, isLoading: followStatusLoading } = useIsFollowing(currentUser?.uid, targetUserId);
+
     const followMutation = useFollowUser();
     const unfollowMutation = useUnfollowUser();
 
     const handleFollowToggle = async () => {
-        if (!currentUser || !userData) return;
-
+        if (!currentUser || !targetUserId) return;
         try {
             if (isFollowing) {
                 await unfollowMutation.mutateAsync({
                     followerId: currentUser.uid,
-                    followingId: userData.uid
+                    followingId: targetUserId
                 });
-                // Update local state for immediate feedback
-                setUserData(prev => prev ? { ...prev, followers: (prev.followers || 1) - 1 } : null);
             } else {
                 await followMutation.mutateAsync({
                     followerId: currentUser.uid,
-                    followingId: userData.uid
+                    followingId: targetUserId
                 });
-                // Update local state for immediate feedback
-                setUserData(prev => prev ? { ...prev, followers: (prev.followers || 0) + 1 } : null);
             }
         } catch (error) {
             console.error("Error toggling follow:", error);
         }
     };
 
-    useEffect(() => {
-        const fetchUser = async () => {
-            setLoading(true);
-            try {
-                const q = query(
-                    collection(db, COLLECTIONS.USERS),
-                    where("username", "==", username),
-                    limit(1)
-                );
-                const querySnapshot = await getDocs(q);
-                if (!querySnapshot.empty) {
-                    setUserData(querySnapshot.docs[0].data() as UserType);
-                }
-            } catch (error) {
-                console.error("Error fetching user:", error);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        if (username) fetchUser();
-    }, [username]);
-
     const tabs = [
-        { id: "all", label: "All", icon: Contact },
+        { id: "all", label: "All", icon: ImageIcon },
         { id: "fans", label: "For Fans", icon: Star },
-        { id: "moments", label: "Moments", icon: PlaySquare },
-        { id: "cards", label: "Veeloo Cards", icon: Layers },
+        { id: "moments", label: "Moments", icon: Video },
+        { id: "cards", label: "Tango Cards", icon: Layers },
     ];
 
-    if (loading) {
+    if (userLoading || forceLoading) {
         return (
-            <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
-                <div className="w-8 h-8 border-4 border-pink-500/20 border-t-pink-500 rounded-full animate-spin" />
+            <div className="min-h-screen bg-black text-white relative">
+                <Navbar />
+                <div className="pt-24 min-h-screen">
+                    <FeedSkeleton />
+                </div>
             </div>
         );
     }
 
-    return (
-        <div className="min-h-screen bg-black text-white relative">
-            {/* CINEMATIC BACKGROUND VIDEO */}
-            <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
-                <video
-                    autoPlay
-                    loop
-                    muted
-                    playsInline
-                    className="w-full h-full object-cover scale-105 blur-[2px] opacity-40"
-                >
-                    <source src="https://ext.same-assets.com/207502500/2070474510.mp4" type="video/mp4" />
-                </video>
-                <div className="absolute inset-0 bg-gradient-to-b from-black via-black/40 to-black" />
-            </div>
-
-            <div className="relative z-10">
+    if (!userData && !userLoading) {
+        return (
+            <div className="min-h-screen bg-black flex flex-col items-center justify-center gap-4 text-white">
                 <Navbar />
+                <p className="text-xl font-bold opacity-40">User not found</p>
+                <button onClick={() => window.history.back()} className="text-[#ff4081] font-bold">Go Back</button>
+            </div>
+        );
+    }
 
-                <main className="max-w-4xl mx-auto pt-28 px-6 pb-20">
-                    {/* Header Profile Section */}
-                    <div className="relative flex flex-col md:flex-row items-start gap-8 mb-12">
-                        {/* Top Right Actions */}
-                        <div className="absolute top-0 right-0 flex items-center gap-4 text-white/60">
-                            <button className="hover:text-white transition-colors">
-                                <Share2 className="w-6 h-6" />
-                            </button>
-                            <button className="hover:text-white transition-colors">
-                                <MoreHorizontal className="w-6 h-6" />
-                            </button>
-                        </div>
+    const displayName = (userData as any)?.displayName || (userData as any)?.username || username;
+    const isVerified = !!(userData?.verified || (userData?.followers && userData.followers >= 1));
 
-                        {/* Avatar */}
-                        <div className="w-32 h-32 md:w-36 md:h-36 rounded-full overflow-hidden ring-1 ring-white/10 shadow-2xl">
+    // Stats formatting helper
+    const formatStat = (num: number) => {
+        if (num >= 1000) return (num / 1000).toFixed(2) + "K";
+        return num.toString();
+    };
+
+    return (
+        <div className="min-h-screen bg-[#0a0a0a] text-white relative font-sans selection:bg-[#ff4081]/30">
+            <Navbar />
+
+            <div className="relative z-10 max-w-4xl mx-auto pt-24 px-6 pb-20">
+                {/* 👑 PREMIUM PROFILE HEADER (SHARP DESIGN) */}
+                <div className="flex items-start gap-6 mb-10">
+                    {/* AVATAR */}
+                    <div className="relative shrink-0">
+                        <div className="w-24 h-24 md:w-32 md:h-32 rounded-full overflow-hidden border border-white/5 bg-[#1a1a1a]">
                             <img
-                                src={userData?.photoURL || `https://ui-avatars.com/api/?name=${userData?.displayName || username}&background=8b5cf6&color=fff&size=256`}
-                                alt={username}
+                                src={userData?.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=333&color=fff&size=512`}
+                                alt={displayName}
                                 className="w-full h-full object-cover"
                             />
                         </div>
+                    </div>
 
-                        {/* Content Section */}
-                        <div className="flex-1 space-y-6 pt-2">
-                            <div>
-                                <h1 className="text-2xl font-bold tracking-tight">
-                                    {userData?.displayName || username}
+                    {/* IDENTITY & STATS */}
+                    <div className="flex-1 min-w-0 pt-1">
+                        <div className="flex items-center justify-between w-full mb-4">
+                            <div className="flex items-center gap-2">
+                                <h1 className="text-2xl font-bold tracking-tight text-white">
+                                    {displayName}
                                 </h1>
-                                <p className="text-white/40 text-[14px] mt-0.5 font-medium">United Kingdom</p>
+                                <VerifiedBadge showOnCondition={isVerified} size={20} />
                             </div>
+                            <div className="flex items-center gap-4 text-white/40">
+                                <Share2 className="w-5 h-5 cursor-pointer hover:text-white transition-colors" />
+                                <MoreHorizontal className="w-5 h-5 cursor-pointer hover:text-white transition-colors" />
+                            </div>
+                        </div>
 
-                            {/* Stats Row */}
-                            <div className="flex items-center gap-8">
-                                <div className="flex flex-col">
-                                    <span className="text-xl font-bold">2.09K</span>
-                                    <div className="flex items-center gap-1.5 text-white/40">
-                                        <Gem className="w-3.5 h-3.5" />
-                                        <span className="text-[12px] font-medium">Earned</span>
-                                    </div>
-                                </div>
-                                <div className="flex flex-col">
-                                    <span className="text-xl font-bold">{userData?.followers || 0}</span>
-                                    <span className="text-[12px] text-white/40 font-medium">Followers</span>
-                                </div>
-                                <div className="flex flex-col">
-                                    <span className="text-xl font-bold">{userData?.following || 0}</span>
-                                    <span className="text-[12px] text-white/40 font-medium">Following</span>
+                        {/* STATS (Sharp Design) */}
+                        <div className="flex items-center gap-8 mb-6">
+                            <div className="flex flex-col">
+                                <span className="text-xl font-bold text-white tracking-tight">
+                                    {formatStat((userData as any)?.earned || 0)}
+                                </span>
+                                <div className="flex items-center gap-1 opacity-40">
+                                    <Gem className="w-3 h-3 " />
+                                    <span className="text-[11px] font-semibold uppercase tracking-wider">Earned</span>
                                 </div>
                             </div>
+                            <div className="flex flex-col">
+                                <span className="text-xl font-bold text-white tracking-tight">
+                                    {formatStat((userData as any)?.followers || 0)}
+                                </span>
+                                <span className="text-[11px] font-semibold uppercase tracking-wider opacity-40">Followers</span>
+                            </div>
+                        </div>
 
-                            {/* Action Buttons */}
-                            <div className="flex flex-wrap items-center gap-3 pt-2">
+                        {/* ACTIONS (Sharp Capsule Design) */}
+                        <div className="flex items-center gap-3">
+                            <button
+                                onClick={handleFollowToggle}
+                                disabled={followStatusLoading || followMutation.isPending || unfollowMutation.isPending || currentUser?.uid === targetUserId}
+                                className={cn(
+                                    "px-8 py-3 rounded-full font-bold text-[14px] transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2 min-w-[130px]",
+                                    isFollowing
+                                        ? "bg-[#1a1a1a] border border-white/10 text-white hover:bg-[#252525]"
+                                        : "bg-gradient-to-r from-[#ff3b5c] to-[#ff4081] text-white hover:opacity-90"
+                                )}
+                            >
+                                {!isFollowing && <Plus className="w-4 h-4" />}
+                                {isFollowing ? "Following" : "Follow"}
+                            </button>
+
+                            <button className="flex items-center justify-center gap-2 px-6 py-3 rounded-full bg-[#1a1a1a] border border-white/10 hover:bg-[#252525] transition-all active:scale-95 font-bold text-[14px] min-w-[110px]">
+                                <MessageCircle className="w-4 h-4" />
+                                Message
+                            </button>
+
+                            <button className="flex items-center justify-center gap-2 px-6 py-3 rounded-full bg-[#1a1a1a] border border-white/10 hover:bg-[#252525] transition-all active:scale-95 font-bold text-[14px] min-w-[110px]">
+                                <Gift className="w-4 h-4" />
+                                Send gift
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                {/* 📋 PROFILE TABS (Sharp Design as requested - Icon top of text) */}
+                <div className="border-b border-white/5 mb-8 sticky top-[64px] bg-[#0a0a0a]/80 backdrop-blur-xl z-20">
+                    <div className="flex items-center justify-center md:justify-start gap-12 sm:gap-16 px-2">
+                        {tabs.map((tab) => {
+                            const Icon = tab.icon;
+                            const isActive = activeTab === tab.id;
+                            return (
                                 <button
-                                    onClick={handleFollowToggle}
-                                    disabled={followStatusLoading || followMutation.isPending || unfollowMutation.isPending || currentUser?.uid === userData?.uid}
-                                    className={`flex items-center justify-center gap-2 px-8 py-3 rounded-full font-bold text-[15px] hover:scale-105 active:scale-95 transition-all shadow-lg ${isFollowing
-                                        ? "bg-white/10 border border-white/20 text-white"
-                                        : "bg-gradient-to-r from-[#ff0080] to-[#ff4081] text-white shadow-pink-500/20"
-                                        } disabled:opacity-50 disabled:cursor-not-allowed`}
+                                    key={tab.id}
+                                    onClick={() => setActiveTab(tab.id)}
+                                    className={cn(
+                                        "relative flex flex-col items-center gap-2 pb-3 pt-4 transition-all duration-300 min-w-[60px]",
+                                        isActive ? "text-white" : "text-white/30 hover:text-white/50"
+                                    )}
                                 >
-                                    {isFollowing ? (
-                                        "Following"
-                                    ) : (
-                                        <>
-                                            <Plus className="w-5 h-5 stroke-[3]" />
-                                            Follow
-                                        </>
+                                    <Icon className={cn("w-5 h-5", isActive ? "text-white" : "opacity-70")} />
+                                    <span className="text-[11px] font-bold tracking-tight uppercase">{tab.label}</span>
+                                    {isActive && (
+                                        <motion.div
+                                            layoutId="activeTabProfileUnderline"
+                                            className="absolute bottom-0 left-0 right-0 h-[2px] bg-white rounded-full"
+                                        />
                                     )}
                                 </button>
-                                <button className="flex items-center justify-center gap-2 px-6 py-3 bg-white/5 border border-white/10 rounded-full font-bold text-[15px] hover:bg-white/10 transition-all">
-                                    <MessageCircle className="w-5 h-5" />
-                                    Message
-                                </button>
-                                <button className="flex items-center justify-center gap-2 px-6 py-3 bg-white/5 border border-white/10 rounded-full font-bold text-[15px] hover:bg-white/10 transition-all">
-                                    <Gift className="w-5 h-5" />
-                                    Send gift
-                                </button>
+                            );
+                        })}
+                    </div>
+                </div>
+
+                {/* Content Section */}
+                <AnimatePresence mode="wait">
+                    <motion.div
+                        key={activeTab}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        transition={{ duration: 0.15 }}
+                        className="px-0"
+                    >
+                        {postsLoading ? (
+                            <div className="grid grid-cols-3 gap-1">
+                                {[1, 2, 3, 4, 5, 6].map(i => (
+                                    <Skeleton key={i} className="aspect-[3/4] w-full bg-[#1a1a1a]" />
+                                ))}
                             </div>
-                        </div>
-                    </div>
-
-                    {/* Tabs Navigation */}
-                    <div className="border-b border-white/5 mb-8">
-                        <div className="flex items-center justify-around md:justify-start md:gap-12">
-                            {tabs.map((tab) => {
-                                const Icon = tab.icon;
-                                const isActive = activeTab === tab.id;
-                                return (
-                                    <button
-                                        key={tab.id}
-                                        onClick={() => setActiveTab(tab.id)}
-                                        className={`relative flex flex-col items-center gap-2 px-4 py-4 transition-all group ${isActive ? "text-white" : "text-white/40 hover:text-white/60"
-                                            }`}
-                                    >
-                                        <Icon className={`w-6 h-6 transition-transform ${isActive ? "scale-110" : "scale-100 group-hover:scale-105"}`} />
-                                        <span className="text-[13px] font-bold">{tab.label}</span>
-                                        {isActive && (
-                                            <motion.div
-                                                layoutId="activeTabProfile"
-                                                className="absolute bottom-0 left-0 right-0 h-0.5 bg-white rounded-full shadow-[0_0_10px_rgba(255,255,255,0.5)]"
+                        ) : posts && posts.length > 0 ? (
+                            <div className={cn(
+                                activeTab === "all" || activeTab === "moments"
+                                    ? "grid grid-cols-3 gap-1"
+                                    : "flex flex-col gap-0.5"
+                            )}>
+                                {posts.map((post) => (
+                                    (activeTab === "all" || activeTab === "moments") ? (
+                                        <div key={post.id} className="aspect-[3/4] bg-black overflow-hidden group relative cursor-pointer">
+                                            <img
+                                                src={`https://res.cloudinary.com/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload/q_auto,f_auto,w_500,h_700,c_fill/${post.cloudinaryPublicId}.jpg`}
+                                                alt="Post"
+                                                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                                                loading="lazy"
                                             />
-                                        )}
-                                    </button>
-                                );
-                            })}
-                        </div>
-                    </div>
-
-                    {/* Content Area - Empty State */}
-                    <div className="py-24 flex flex-col items-center justify-center text-center opacity-40">
-                        <div className="relative mb-6">
-                            <ImageIcon className="w-20 h-20 text-white/20" strokeWidth={1} />
-                            <div className="absolute -top-1 -right-1 w-8 h-8 rounded-lg border-2 border-white/10 rotate-12 -z-10" />
-                            <div className="absolute -bottom-1 -left-1 w-8 h-8 rounded-lg border-2 border-white/10 -rotate-12 -z-10" />
-                        </div>
-                        <p className="text-xl font-bold tracking-wide">No Posts</p>
-                    </div>
-                </main>
-            </div >
-        </div >
+                                            {/* Views overlay */}
+                                            <div className="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-black/60 to-transparent flex items-center justify-between opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <div className="flex items-center gap-1.5">
+                                                    <Gem className="w-3.5 h-3.5 text-white" />
+                                                    <span className="text-[11px] font-bold text-white">{post.engagement?.views || 0}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <TweetCard key={post.id} post={{ ...post, creator: (userData as User) }} />
+                                    )
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="py-32 flex flex-col items-center justify-center text-center opacity-20">
+                                <ImageIcon className="w-16 h-16 mb-4" strokeWidth={1} />
+                                <p className="text-lg font-bold">No content yet</p>
+                            </div>
+                        )}
+                    </motion.div>
+                </AnimatePresence>
+            </div>
+        </div>
     );
 }

@@ -6,13 +6,19 @@ import { TrendingNow } from "@/components/TrendingNow";
 import Footer from "@/components/footer";
 import { BackgroundVideo } from "@/components/BackgroundVideo";
 import { useAuthStore } from "@/lib/store";
-import { Sidebar } from "@/components/Sidebar";
+
+
+import { TwitterLayout } from "@/components/x-layout/TwitterLayout";
 
 export default function Home() {
   const { isAuthenticated } = useAuthStore();
 
+  if (isAuthenticated) {
+    return <TwitterLayout />;
+  }
+
   return (
-    <main className="relative flex flex-col min-h-screen bg-black">
+    <main className="relative flex flex-col min-h-screen bg-background">
       {/* Video Background only for non-authenticated users */}
       {!isAuthenticated && <BackgroundVideo />}
 
