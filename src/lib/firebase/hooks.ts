@@ -55,7 +55,7 @@ export function useUser(userId: string) {
 }
 
 export function useUserByUsername(username: string) {
-  return useQuery({
+  return useQuery<User | null>({
     queryKey: QUERY_KEYS.userByUsername(username),
     queryFn: () => getUserByUsername(username),
     enabled: !!username,
