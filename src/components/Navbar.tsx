@@ -35,7 +35,14 @@ export function Navbar() {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
 
-  const navItems = [
+interface NavItem {
+  name: string;
+  icon: React.ForwardRefExoticComponent<Omit<React.SVGProps<SVGSVGElement>, "ref"> & React.RefAttributes<SVGSVGElement>>;
+  href: string;
+  badge?: string | number;
+}
+
+  const navItems: NavItem[] = [
     { name: "For You", icon: ThumbsUp, href: "/" },
     { name: "Following", icon: Users, href: "/following" },
     { name: "Explore", icon: Compass, href: "/explore" },
