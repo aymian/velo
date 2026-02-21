@@ -14,6 +14,7 @@ import { cn } from "@/lib/utils";
 import { VerifiedBadge } from "@/components/ui/VerifiedBadge";
 import CustomVideoPlayer from "@/components/video/CustomVideoPlayer";
 import { CLOUDINARY_CONFIG } from "@/lib/cloudinary-config";
+import { PostActionsMenu } from "./PostActionsMenu";
 
 dayjs.extend(relativeTime);
 
@@ -28,6 +29,8 @@ export function TweetCard({ post }: TweetCardProps) {
     const timeAgo = dayjs(post.createdAt?.toDate?.() || post.createdAt).fromNow(true);
 
     const [isCommentModalOpen, setIsCommentModalOpen] = React.useState(false);
+    const [isMenuOpen, setIsMenuOpen] = React.useState(false);
+    const [menuAnchor, setMenuAnchor] = React.useState<HTMLElement | null>(null);
 
     // Realtime Engagement & Like status
     const { data: isLiked } = usePostLiked(currentUser?.uid, post.id);
@@ -108,7 +111,13 @@ export function TweetCard({ post }: TweetCardProps) {
                         </span>
                     </div>
                 </Link>
-                <button className="p-1 hover:bg-white/5 rounded-full transition-colors">
+                <button
+                    onClick={(e) => {
+                        setMenuAnchor(e.currentTarget);
+                        setIsMenuOpen(true);
+                    }}
+                    className="p-1 hover:bg-white/5 rounded-full transition-colors active:scale-95"
+                >
                     <MoreHorizontal className="w-5 h-5 text-white/40" />
                 </button>
             </div>
@@ -204,6 +213,12 @@ export function TweetCard({ post }: TweetCardProps) {
                 isOpen={isCommentModalOpen}
                 onClose={() => setIsCommentModalOpen(false)}
                 post={post}
+            />
+
+            <PostActionsMenu 
+                isOpen={isMenuOpen}
+                onClose={() => setIsMenuOpen(false)}
+                anchorEl={menuAnchor}
             />
         </div>
     );
