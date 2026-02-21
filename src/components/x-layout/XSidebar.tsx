@@ -8,7 +8,8 @@ import {
     Info,
     Mail,
     MoreHorizontal,
-    Feather
+    Feather,
+    Users
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -73,6 +74,7 @@ export function XSidebar() {
             {/* Nav Items Container */}
             <div className="space-y-4 w-full px-2">
                 <SidebarItem href="/" icon={Home} label="Home" active={pathname === "/"} />
+                <SidebarItem href="/following" icon={Users} label="Following" active={pathname === "/following"} />
                 <SidebarItem
                     onClick={() => setSearchOpen(true)}
                     icon={Search}

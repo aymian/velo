@@ -68,7 +68,7 @@ export function TrendingNow() {
           </div>
 
           {/* Reaction Bubble */}
-          <div className="absolute bottom-32 left-8 bg-gradient-to-br from-orange-500 to-pink-600 w-16 h-16 rounded-full flex items-center justify-center shadow-[0_10px_30px_rgba(255,100,100,0.5)] animate-bounce z-20">
+          <div className="absolute bottom-32 left-8 bg-gradient-to-br from-[#FF2D55] to-[#a855f7] w-16 h-16 rounded-full flex items-center justify-center shadow-[0_10px_30px_rgba(255,45,85,0.3)] animate-bounce z-20">
             <Heart className="w-8 h-8 text-white fill-white" />
           </div>
         </motion.div>

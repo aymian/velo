@@ -22,7 +22,7 @@ function StoryCircle({ username, imageUrl, hasUnseen, onClick }: {
         >
             <div className={cn(
                 "w-[54px] h-[54px] rounded-full p-[2px] transition-transform active:scale-95",
-                hasUnseen ? "bg-gradient-to-tr from-[#FFD600] via-[#FF2D55] to-[#A855F7]" : "bg-neutral-800"
+                hasUnseen ? "bg-gradient-to-tr from-[#FF2D55] to-[#A855F7]" : "bg-neutral-800"
             )}>
                 <div className="w-full h-full rounded-full p-[2px] bg-black">
                     <Avatar className="w-full h-full border-none">

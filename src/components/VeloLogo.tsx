@@ -20,8 +20,8 @@ export function VeloLogo({ className = "", showText = true }: VeloLogoProps) {
             >
                 <defs>
                     <linearGradient id="veloGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stopColor="#ff4081" />
-                        <stop offset="100%" stopColor="#7c4dff" />
+                        <stop offset="0%" stopColor="#FF2D55" />
+                        <stop offset="100%" stopColor="#a855f7" />
                     </linearGradient>
                 </defs>
 

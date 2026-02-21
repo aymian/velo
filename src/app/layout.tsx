@@ -13,7 +13,7 @@ export const metadata: Metadata = {
   description:
     "Veeloo is your free video chat and live streaming platform to meet new people, stream live, and connect in real time, anytime. Join now and start chatting.",
   icons: {
-    icon: "https://ext.same-assets.com/3286759155/2637069616.ico",
+    icon: "/icon.svg",
   },
 };
 
