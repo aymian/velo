@@ -28,7 +28,8 @@ import {
   getPostById,
   getUserById,
   updatePost,
-  updateUser
+  updateUser,
+  getComments
 } from './helpers';
 import React from 'react';
 
@@ -200,16 +201,59 @@ export function usePostLiked(userId: string | undefined, postId: string) {
   });
 }
 
-export function useToggleLike() {
+export function useToggleLikePost() {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: ({ userId, postId }: { userId: string; postId: string }) =>
       toggleLikePost(userId, postId),
-    onSuccess: (_, { userId, postId }) => {
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.postLiked(userId, postId) });
-      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.post(postId) });
+    onMutate: async ({ userId, postId }) => {
+      // Cancel any outgoing refetches for the post and postLiked queries
+      await queryClient.cancelQueries({ queryKey: QUERY_KEYS.post(postId) });
+      await queryClient.cancelQueries({ queryKey: QUERY_KEYS.postLiked(userId, postId) });
+
+      // Snapshot the previous values
+      const previousPost = queryClient.getQueryData(QUERY_KEYS.post(postId));
+      const previousPostLiked = queryClient.getQueryData(QUERY_KEYS.postLiked(userId, postId));
+
+      // Optimistically update the post's like count and liked status
+      queryClient.setQueryData(QUERY_KEYS.post(postId), (old: any) => {
+        if (!old) return old;
+        const newLikes = previousPostLiked ? old.engagement.likes - 1 : old.engagement.likes + 1;
+        return {
+          ...old,
+          engagement: {
+            ...old.engagement,
+            likes: newLikes,
+          },
+        };
+      });
+      queryClient.setQueryData(QUERY_KEYS.postLiked(userId, postId), (old: any) => !old);
+
+      return { previousPost, previousPostLiked };
     },
+    onError: (err, { userId, postId }, context) => {
+      // If the mutation fails, roll back to the previous values
+      if (context?.previousPost) {
+        queryClient.setQueryData(QUERY_KEYS.post(postId), context.previousPost);
+      }
+      if (context?.previousPostLiked) {
+        queryClient.setQueryData(QUERY_KEYS.postLiked(userId, postId), context.previousPostLiked);
+      }
+    },
+    onSettled: (data, error, { userId, postId }) => {
+      // Invalidate queries to refetch the latest data from the server
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.post(postId) });
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.postLiked(userId, postId) });
+    },
+  });
+}
+
+export function useComments(postId: string) {
+  return useQuery({
+    queryKey: ['comments', postId],
+    queryFn: () => getComments(postId),
+    enabled: !!postId,
   });
 }
 
@@ -219,7 +263,54 @@ export function useAddComment() {
   return useMutation({
     mutationFn: ({ userId, postId, content }: { userId: string; postId: string; content: string }) =>
       addComment(userId, postId, content),
-    onSuccess: (_, { postId }) => {
+    onMutate: async ({ userId, postId, content }) => {
+      // Cancel any outgoing refetches for the comments query
+      await queryClient.cancelQueries({ queryKey: ['comments', postId] });
+      await queryClient.cancelQueries({ queryKey: QUERY_KEYS.post(postId) });
+
+      // Snapshot the previous comments and post data
+      const previousComments = queryClient.getQueryData(['comments', postId]);
+      const previousPost = queryClient.getQueryData(QUERY_KEYS.post(postId));
+
+      // Optimistically update the comments list
+      queryClient.setQueryData(['comments', postId], (old: any) => {
+        const newComment = {
+          id: 'optimistic-id-' + Date.now(), // Temporary ID for optimistic update
+          userId,
+          content,
+          createdAt: new Date(),
+          likes: 0,
+          user: { uid: userId }, // Add a dummy user object for display
+        };
+        return old ? [newComment, ...old] : [newComment];
+      });
+
+      // Optimistically update the post's comment count
+      queryClient.setQueryData(QUERY_KEYS.post(postId), (old: any) => {
+        if (!old) return old;
+        return {
+          ...old,
+          engagement: {
+            ...old.engagement,
+            comments: (old.engagement.comments || 0) + 1,
+          },
+        };
+      });
+
+      return { previousComments, previousPost };
+    },
+    onError: (err, { postId }, context) => {
+      // If the mutation fails, roll back to the previous values
+      if (context?.previousComments) {
+        queryClient.setQueryData(['comments', postId], context.previousComments);
+      }
+      if (context?.previousPost) {
+        queryClient.setQueryData(QUERY_KEYS.post(postId), context.previousPost);
+      }
+    },
+    onSettled: (data, error, { postId }) => {
+      // Invalidate queries to refetch the latest data from the server
+      queryClient.invalidateQueries({ queryKey: ['comments', postId] });
       queryClient.invalidateQueries({ queryKey: QUERY_KEYS.post(postId) });
     },
   });

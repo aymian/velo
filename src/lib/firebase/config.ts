@@ -16,7 +16,8 @@ const firebaseConfig = {
   storageBucket: "veeloo-45e00.firebasestorage.app",
   messagingSenderId: "994308701230",
   appId: "1:994308701230:web:af4ea89129d489052f33bf",
-  measurementId: "G-MLZV8L44L6"
+  measurementId: "G-MLZV8L44L6",
+  databaseURL: "https://veeloo-45e00-default-rtdb.europe-west1.firebasedatabase.app/"
 };
 
 // Initialize Firebase (singleton pattern to prevent multiple initializations)

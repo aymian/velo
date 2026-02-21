@@ -14,6 +14,8 @@ import {
     Phone,
     Video
 } from "lucide-react";
+import data from "@emoji-mart/data";
+import Picker from "@emoji-mart/react";
 import { AgoraCallModal } from "@/components/AgoraCallModal";
 import { Navbar } from "@/components/Navbar";
 import { ConversationsSidebar } from "@/components/ConversationsSidebar";
@@ -53,6 +55,13 @@ interface ChatMessage {
     fileName?: string;
     fileType?: string;
     createdAt?: any;
+    isDeleted?: boolean;
+    deletedAt?: any;
+    editedAt?: any;
+    replyToMessageId?: string;
+    replyToText?: string | null;
+    replyToType?: "text" | "image" | "file";
+    replyToSenderId?: string;
 }
 
 function formatTime(value: any) {
@@ -80,6 +89,10 @@ export default function ChatPage() {
     const [input, setInput] = useState("");
     const [isSending, setIsSending] = useState(false);
     const [isUploadingFile, setIsUploadingFile] = useState(false);
+    const [replyTo, setReplyTo] = useState<ChatMessage | null>(null);
+    const [isEmojiOpen, setIsEmojiOpen] = useState(false);
+    const [openMenuMessageId, setOpenMenuMessageId] = useState<string | null>(null);
+    const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
 
     const fileInputRef = useRef<HTMLInputElement | null>(null);
     const messagesEndRef = useRef<HTMLDivElement | null>(null);
@@ -252,6 +265,36 @@ export default function ChatPage() {
         setIsSending(true);
 
         try {
+            const conversationRef = doc(db, "conversations", conversationId);
+
+            if (editingMessageId) {
+                const messageRef = doc(
+                    db,
+                    "conversations",
+                    conversationId,
+                    "messages",
+                    editingMessageId
+                );
+
+                await updateDoc(messageRef, {
+                    text: trimmed,
+                    editedAt: serverTimestamp()
+                });
+
+                await updateDoc(conversationRef, {
+                    lastMessage: trimmed,
+                    lastMessageAt: serverTimestamp(),
+                    lastSenderId: currentUser.uid,
+                    updatedAt: serverTimestamp(),
+                    [`typing.${currentUser.uid}`]: false
+                });
+
+                setEditingMessageId(null);
+                setReplyTo(null);
+                setInput("");
+                return;
+            }
+
             const messagesRef = collection(
                 db,
                 "conversations",
@@ -263,10 +306,12 @@ export default function ChatPage() {
                 senderId: currentUser.uid,
                 text: trimmed,
                 type: "text",
-                createdAt: serverTimestamp()
+                createdAt: serverTimestamp(),
+                replyToMessageId: replyTo?.id ?? null,
+                replyToText: replyTo?.text ?? null,
+                replyToType: replyTo?.type ?? null,
+                replyToSenderId: replyTo?.senderId ?? null
             });
-
-            const conversationRef = doc(db, "conversations", conversationId);
 
             await updateDoc(conversationRef, {
                 lastMessage: trimmed,
@@ -276,6 +321,7 @@ export default function ChatPage() {
                 [`typing.${currentUser.uid}`]: false
             });
 
+            setReplyTo(null);
             setInput("");
         } catch (e) {
             console.error("Error sending message", e);
@@ -384,13 +430,53 @@ export default function ChatPage() {
 
     const callChannelName = conversationId ?? [currentUser?.uid, uid].filter(Boolean).sort().join("_");
 
+    const handleEmojiSelect = (emoji: any) => {
+        const value = emoji?.native || "";
+        if (!value) return;
+        setInput((prev) => `${prev}${value}`);
+        setIsEmojiOpen(false);
+    };
+
+    const handleUnsend = async (message: ChatMessage) => {
+        if (!conversationId || !currentUser?.uid) return;
+        if (message.senderId !== currentUser.uid) return;
+
+        try {
+            const messageRef = doc(
+                db,
+                "conversations",
+                conversationId,
+                "messages",
+                message.id
+            );
+
+            await updateDoc(messageRef, {
+                text: "",
+                fileUrl: null,
+                fileName: null,
+                fileType: null,
+                isDeleted: true,
+                deletedAt: serverTimestamp()
+            });
+
+            const conversationRef = doc(db, "conversations", conversationId);
+            await updateDoc(conversationRef, {
+                lastMessage: "Message unsent",
+                lastMessageAt: serverTimestamp(),
+                lastSenderId: currentUser.uid,
+                updatedAt: serverTimestamp()
+            });
+        } catch (e) {
+            console.error("Error unsending message", e);
+        }
+    };
+
     if (!currentUser?.uid) {
         return (
             <main className="min-h-screen bg-black text-white selection:bg-[#FF2D55]">
-                
                 <div className="flex-1 flex flex-col">
                     <Navbar />
-                    <div className="pt-16 flex flex-col h-screen max-w-2xl mx-auto border-x border-white/10 w-full">
+                    <div className="pt-16 flex flex-col min-h-screen max-w-2xl mx-auto border-x border-white/10 w-full">
                         <div className="flex-1 flex items-center justify-center px-6">
                             <div className="text-center space-y-3">
                                 <h1 className="text-xl font-bold">
@@ -409,8 +495,6 @@ export default function ChatPage() {
 
     return (
         <main className="min-h-screen bg-[#0d0d0d] text-white selection:bg-[#FF2D55]">
-            
-
             {callMode && currentUser?.uid && uid && (
                 <AgoraCallModal
                     isOpen={!!callMode}
@@ -424,13 +508,13 @@ export default function ChatPage() {
                 />
             )}
 
-            <div className="flex flex-col h-screen">
+            <div className="flex flex-col min-h-screen">
                 <Navbar />
 
-                <div className="flex flex-1 overflow-hidden pt-16">
+                <div className="flex flex-1 pt-16">
                     <ConversationsSidebar />
 
-                <div className="flex flex-col flex-1 overflow-hidden border-x border-white/[0.06] max-w-2xl w-full mx-auto">
+                <div className="relative flex flex-col flex-1 overflow-hidden border-x border-white/[0.06] max-w-2xl w-full mx-auto">
                     <div className="px-4 py-3 flex items-center justify-between border-b border-white/[0.06] bg-[#0d0d0d] sticky top-0 z-20">
                         <div className="flex items-center gap-4">
                             <button
@@ -528,74 +612,206 @@ export default function ChatPage() {
                                             message.senderId === currentUser.uid;
                                         const isImage = message.type === "image";
                                         const isFile = message.type === "file";
+                                        const isDeleted = !!message.isDeleted;
+                                        const canEdit = message.type === "text" && !isDeleted && !!message.text;
+
+                                        let touchStartX = 0;
+                                        let touchStartY = 0;
+
+                                        const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
+                                            const touch = e.touches[0];
+                                            touchStartX = touch.clientX;
+                                            touchStartY = touch.clientY;
+                                        };
+
+                                        const handleTouchEnd = (e: React.TouchEvent<HTMLDivElement>) => {
+                                            const touch = e.changedTouches[0];
+                                            const deltaX = touch.clientX - touchStartX;
+                                            const deltaY = Math.abs(touch.clientY - touchStartY);
+
+                                            if (deltaX > 40 && deltaY < 30 && !isDeleted) {
+                                                setReplyTo(message);
+                                                setEditingMessageId(null);
+                                                setOpenMenuMessageId(null);
+                                            }
+                                        };
 
                                         return (
                                             <div
                                                 key={message.id}
+                                                onTouchStart={handleTouchStart}
+                                                onTouchEnd={handleTouchEnd}
                                                 className={`flex flex-col gap-1 ${
                                                     isOwn
                                                         ? "items-end"
                                                         : "items-start"
                                                 }`}
                                             >
-                                                <div
-                                                    className={`px-4 py-2.5 rounded-[1.5rem] max-w-[80%] shadow-[0_4px_15px_rgba(0,0,0,0.5)] ${
-                                                        isOwn
-                                                            ? "bg-gradient-to-r from-[#FF2D55] to-[#7c4dff] rounded-tr-none"
-                                                            : "bg-[#202327] rounded-tl-none"
-                                                    }`}
-                                                >
-                                                    {isImage && message.fileUrl && (
-                                                        <div className="overflow-hidden rounded-2xl border border-white/10">
-                                                            <img
-                                                                src={message.fileUrl}
-                                                                alt={
-                                                                    message.fileName ||
-                                                                    "Image"
+                                                <div className="flex items-center gap-2 max-w-[85%]">
+                                                    {!isOwn && (
+                                                        <button
+                                                            onClick={() => {
+                                                                if (!isDeleted) {
+                                                                    setReplyTo(message);
+                                                                    setEditingMessageId(null);
+                                                                    setOpenMenuMessageId(null);
                                                                 }
-                                                                className="max-h-64 w-full object-cover"
-                                                            />
+                                                            }}
+                                                            className="hidden sm:flex p-1 text-white/30 hover:text-white transition-colors"
+                                                        >
+                                                            <ChevronLeft className="w-4 h-4 rotate-180" />
+                                                        </button>
+                                                    )}
+                                                    <div
+                                                        className={`px-4 py-2.5 rounded-[1.5rem] max-w-full shadow-[0_4px_15px_rgba(0,0,0,0.5)] ${
+                                                            isOwn
+                                                                ? "bg-gradient-to-r from-[#FF2D55] to-[#7c4dff] rounded-tr-none"
+                                                                : "bg-[#202327] rounded-tl-none"
+                                                        }`}
+                                                    >
+                                                        {message.replyToMessageId && !isDeleted && (
+                                                            <div className={`mb-2 rounded-xl px-3 py-1.5 text-[11px] ${
+                                                                isOwn ? "bg-white/10" : "bg-black/30"
+                                                            }`}>
+                                                                <span className="block text-white/60">
+                                                                    Replying to {message.replyToSenderId === currentUser.uid ? "you" : "them"}
+                                                                </span>
+                                                                {message.replyToType === "text" && message.replyToText && (
+                                                                    <span className="block text-white/80 text-[11px] max-w-[220px] overflow-hidden text-ellipsis whitespace-nowrap">
+                                                                        {message.replyToText}
+                                                                    </span>
+                                                                )}
+                                                                {message.replyToType === "image" && (
+                                                                    <span className="block text-white/80">
+                                                                        Photo
+                                                                    </span>
+                                                                )}
+                                                                {message.replyToType === "file" && (
+                                                                    <span className="block text-white/80">
+                                                                        File
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                        )}
+
+                                                        {isDeleted ? (
+                                                            <>
+                                                                <span className="text-[13px] text-white/60 italic">
+                                                                    {isOwn ? "You unsent a message" : "This message was unsent"}
+                                                                </span>
+                                                                <div className="flex items-center gap-2 mt-1 opacity-70 text-[11px]">
+                                                                    <span>
+                                                                        {formatTime(message.createdAt)}
+                                                                    </span>
+                                                                </div>
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                {isImage && message.fileUrl && (
+                                                                    <div className="overflow-hidden rounded-2xl border border-white/10">
+                                                                        <img
+                                                                            src={message.fileUrl}
+                                                                            alt={
+                                                                                message.fileName ||
+                                                                                "Image"
+                                                                            }
+                                                                            className="max-h-64 w-full object-cover"
+                                                                        />
+                                                                    </div>
+                                                                )}
+
+                                                                {isFile && message.fileUrl && (
+                                                                    <a
+                                                                        href={message.fileUrl}
+                                                                        target="_blank"
+                                                                        rel="noreferrer"
+                                                                        className="flex items-center gap-3 text-sm"
+                                                                    >
+                                                                        <div className="flex items-center justify-center w-9 h-9 rounded-full bg-black/20">
+                                                                            <FileText className="w-4 h-4" />
+                                                                        </div>
+                                                                        <div className="flex flex-col">
+                                                                            <span className="font-semibold break-all">
+                                                                                {message.fileName}
+                                                                            </span>
+                                                                            <span className="text-xs opacity-60">
+                                                                                Tap to open file
+                                                                            </span>
+                                                                        </div>
+                                                                    </a>
+                                                                )}
+
+                                                                {!isImage && !isFile && message.text && (
+                                                                    <span className="text-[15px] font-medium">
+                                                                        {message.text}
+                                                                    </span>
+                                                                )}
+
+                                                                <div className="flex items-center gap-2 mt-1 opacity-70 text-[11px]">
+                                                                    <span>
+                                                                        {formatTime(message.createdAt)}
+                                                                    </span>
+                                                                    {message.editedAt && (
+                                                                        <span className="text-white/80">
+                                                                            Edited
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                            </>
+                                                        )}
+                                                    </div>
+
+                                                    {isOwn && !isDeleted && (
+                                                        <div className="relative">
+                                                            <button
+                                                                onClick={() =>
+                                                                    setOpenMenuMessageId(
+                                                                        openMenuMessageId === message.id ? null : message.id
+                                                                    )
+                                                                }
+                                                                className="p-1 text-white/40 hover:text-white transition-colors"
+                                                            >
+                                                                <MoreHorizontal className="w-4 h-4" />
+                                                            </button>
+                                                            {openMenuMessageId === message.id && (
+                                                                <div className="absolute right-0 mt-1 w-32 rounded-xl bg-[#111] border border-white/10 shadow-xl overflow-hidden z-30">
+                                                                    <button
+                                                                        disabled={!canEdit}
+                                                                        onClick={() => {
+                                                                            if (!canEdit) return;
+                                                                            setEditingMessageId(message.id);
+                                                                            setInput(message.text || "");
+                                                                            setReplyTo(null);
+                                                                            setOpenMenuMessageId(null);
+                                                                        }}
+                                                                        className={`w-full text-left px-3 py-2 text-[12px] ${
+                                                                            canEdit
+                                                                                ? "text-white hover:bg-white/5"
+                                                                                : "text-white/30 cursor-not-allowed"
+                                                                        }`}
+                                                                    >
+                                                                        Edit
+                                                                    </button>
+                                                                    <button
+                                                                        onClick={() => {
+                                                                            handleUnsend(message);
+                                                                            setOpenMenuMessageId(null);
+                                                                        }}
+                                                                        className="w-full text-left px-3 py-2 text-[12px] text-[#ff8a9e] hover:bg-[#ff2d55]/10"
+                                                                    >
+                                                                        Unsend
+                                                                    </button>
+                                                                </div>
+                                                            )}
                                                         </div>
                                                     )}
-
-                                                    {isFile && message.fileUrl && (
-                                                        <a
-                                                            href={message.fileUrl}
-                                                            target="_blank"
-                                                            rel="noreferrer"
-                                                            className="flex items-center gap-3 text-sm"
-                                                        >
-                                                            <div className="flex items-center justify-center w-9 h-9 rounded-full bg-black/20">
-                                                                <FileText className="w-4 h-4" />
-                                                            </div>
-                                                            <div className="flex flex-col">
-                                                                <span className="font-semibold break-all">
-                                                                    {message.fileName}
-                                                                </span>
-                                                                <span className="text-xs opacity-60">
-                                                                    Tap to open file
-                                                                </span>
-                                                            </div>
-                                                        </a>
-                                                    )}
-
-                                                    {!isImage && !isFile && message.text && (
-                                                        <span className="text-[15px] font-medium">
-                                                            {message.text}
-                                                        </span>
-                                                    )}
-
-                                                    <div className="flex items-center gap-2 mt-1 opacity-70 text-[11px]">
-                                                        <span>
-                                                            {formatTime(message.createdAt)}
-                                                        </span>
-                                                    </div>
                                                 </div>
 
                                                 {isOwn &&
                                                     lastOutgoingMessage &&
                                                     message.id ===
-                                                        lastOutgoingMessage.id && (
+                                                        lastOutgoingMessage.id &&
+                                                    !isDeleted && (
                                                         <div className="flex items-center gap-1 text-[11px] pr-1">
                                                             {isLastMessageSeen ? (
                                                                 <>
@@ -628,6 +844,42 @@ export default function ChatPage() {
                         )}
                     </div>
 
+                    {replyTo && (
+                        <div className="px-3 pb-2 border-t border-white/[0.06] bg-[#0d0d0d] w-full">
+                            <div className="flex items-start justify-between gap-2 rounded-2xl bg-white/[0.04] px-3 py-2">
+                                <div className="text-[11px]">
+                                    <div className="text-[#FF2D55] font-semibold mb-0.5">
+                                        Replying to{" "}
+                                        {replyTo.senderId === currentUser.uid ? "yourself" : displayName}
+                                    </div>
+                                    <div className="text-white/70 text-[11px] max-w-[260px] overflow-hidden text-ellipsis whitespace-nowrap">
+                                        {replyTo.type === "text" && replyTo.text}
+                                        {replyTo.type === "image" && "Photo"}
+                                        {replyTo.type === "file" && (replyTo.fileName || "File")}
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={() => setReplyTo(null)}
+                                    className="text-white/40 hover:text-white text-xs px-1"
+                                >
+                                    ×
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    {isEmojiOpen && (
+                        <div className="absolute bottom-[76px] right-3 z-30">
+                            <Picker
+                                data={data}
+                                onEmojiSelect={handleEmojiSelect}
+                                theme="dark"
+                                previewPosition="none"
+                                navPosition="top"
+                            />
+                        </div>
+                    )}
+
                     <div className="px-3 py-3 border-t border-white/[0.06] bg-[#0d0d0d] w-full">
                         <div className="flex items-center gap-2">
                             <div className="flex items-center">
@@ -643,7 +895,11 @@ export default function ChatPage() {
                                         GIF
                                     </div>
                                 </button>
-                                <button className="p-2.5 text-[#FF2D55] hover:bg-[#FF2D55]/10 rounded-full transition-all">
+                                <button
+                                    type="button"
+                                    onClick={() => setIsEmojiOpen((open) => !open)}
+                                    className="p-2.5 text-[#FF2D55] hover:bg-[#FF2D55]/10 rounded-full transition-all"
+                                >
                                     <Smile className="w-5 h-5" />
                                 </button>
                             </div>

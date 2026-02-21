@@ -1,7 +1,7 @@
 "use client";
 
 import { useInfiniteQuery } from "@tanstack/react-query";
-import { collection, query, orderBy, limit, startAfter, getDocs, doc, getDoc } from "firebase/firestore";
+import { collection, query, orderBy, limit, startAfter, getDocs, doc, getDoc, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase/config";
 import { COLLECTIONS, Post, User } from "@/lib/firebase/collections";
 import { TweetCard } from "./TweetCard";
@@ -77,13 +77,43 @@ export function XFeed() {
         fetchNextPage,
         hasNextPage,
         isFetchingNextPage,
-        status
+        status,
+        refetch
     } = useInfiniteQuery({
         queryKey: ["x-posts-feed", activeTab],
         queryFn: fetchPosts,
         getNextPageParam: (lastPage) => lastPage.lastVisible || undefined,
         initialPageParam: null,
     });
+
+    // Real-time listener for new posts
+    useEffect(() => {
+        // Only listen on "foryou" tab which shows all posts
+        if (activeTab !== "foryou") return;
+
+        const q = query(
+            collection(db, COLLECTIONS.POSTS),
+            orderBy("createdAt", "desc"),
+            limit(1)
+        );
+
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            if (snapshot.empty) return;
+
+            const latestPostId = snapshot.docs[0].id;
+            // check if we have data loaded
+            if (!data || !data.pages || data.pages.length === 0 || data.pages[0].posts.length === 0) return;
+
+            const currentFirstPostId = data.pages[0].posts[0].id;
+
+            // If the latest post in DB is different from our first post, refresh
+            if (latestPostId !== currentFirstPostId) {
+                refetch();
+            }
+        });
+
+        return () => unsubscribe();
+    }, [data, activeTab, refetch]);
 
     useEffect(() => {
         const observer = new IntersectionObserver(

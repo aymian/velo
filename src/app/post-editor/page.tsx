@@ -191,9 +191,15 @@ function PostEditorContent() {
 
                 if (response.data) {
                     cloudinaryData.cloudinaryPublicId = response.data.public_id;
-                    cloudinaryData.videoUrl = response.data.secure_url;
                     cloudinaryData.resourceType = resourceType;
                     cloudinaryData.status = 'ready';
+                    if (resourceType === 'image') {
+                        cloudinaryData.imageUrl = response.data.secure_url;
+                        cloudinaryData.postType = 'image';
+                    } else {
+                        cloudinaryData.videoUrl = response.data.secure_url;
+                        cloudinaryData.postType = 'video';
+                    }
                 }
             }
 

@@ -5,8 +5,6 @@
 export const COLLECTIONS = {
     USERS: 'users',
     POSTS: 'posts',
-    COMMENTS: 'comments',
-    LIKES: 'likes',
     FOLLOWS: 'follows',
     NOTIFICATIONS: 'notifications',
     MESSAGES: 'messages',
@@ -39,8 +37,10 @@ export interface Post {
     id: string;
     creatorId: string;
     caption: string;
+    postType?: 'video' | 'image' | 'audio';
     cloudinaryPublicId?: string;
-    videoUrl?: string; // secure_url from Cloudinary
+    videoUrl?: string; // secure_url from Cloudinary (video posts)
+    imageUrl?: string; // secure_url from Cloudinary (image posts)
     status: 'processing' | 'ready' | 'error';
     visibility: 'public' | 'subscribers' | 'locked';
     price?: number;
@@ -62,7 +62,6 @@ export interface Post {
 // Comment type
 export interface Comment {
     id: string;
-    postId: string;
     userId: string;
     content: string;
     likes: number;
@@ -74,8 +73,6 @@ export interface Comment {
 export interface Like {
     id: string;
     userId: string;
-    targetId: string; // Post or Comment ID
-    targetType: 'post' | 'comment';
     createdAt: Date;
 }
 

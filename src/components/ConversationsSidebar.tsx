@@ -143,7 +143,7 @@ export function ConversationsSidebar() {
     };
 
     return (
-        <aside className="hidden md:flex flex-col w-[280px] shrink-0 border-r border-white/[0.06] bg-[#0d0d0d] h-full overflow-hidden">
+        <aside className="hidden md:flex md:sticky md:top-16 flex-col w-[280px] shrink-0 border-r border-white/[0.06] bg-[#0d0d0d] h-full overflow-hidden">
             {/* Header */}
             <div className="px-4 pt-5 pb-3 border-b border-white/[0.06]">
                 <h2 className="text-[15px] font-semibold text-white">Messages</h2>

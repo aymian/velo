@@ -18,7 +18,8 @@ import {
     Timestamp,
     serverTimestamp,
     increment,
-    writeBatch
+    writeBatch,
+    CollectionReference
 } from 'firebase/firestore';
 import { ref, set, update, increment as rtIncrement } from 'firebase/database';
 import { db, rtdb } from './config';
@@ -46,11 +47,14 @@ export async function getDocument<T = DocumentData>(
 
 // Generic function to get multiple documents with query
 export async function getDocuments<T = DocumentData>(
-    collectionName: string,
+    collectionNameOrRef: string | CollectionReference,
     constraints: QueryConstraint[] = []
 ): Promise<T[]> {
     try {
-        const collectionRef = collection(db, collectionName);
+        const collectionRef =
+            typeof collectionNameOrRef === 'string'
+                ? collection(db, collectionNameOrRef)
+                : collectionNameOrRef;
         const q = query(collectionRef, ...constraints);
         const querySnapshot = await getDocs(q);
 
@@ -257,61 +261,54 @@ export async function getFollowing(userId: string) {
 
 // Like and Comment helpers
 export async function toggleLikePost(userId: string, postId: string) {
-    const likeId = `${userId}_${postId}`;
-    const likeRef = doc(db, COLLECTIONS.LIKES, likeId);
+    const batch = writeBatch(db);
+    const likeRef = doc(db, COLLECTIONS.POSTS, postId, 'likes', userId);
     const postRef = doc(db, COLLECTIONS.POSTS, postId);
     const rtEngagementRef = ref(rtdb, `engagement/posts/${postId}`);
 
-    const likeDoc = await getDoc(likeRef);
-    const batch = writeBatch(db);
+    const likeSnap = await getDoc(likeRef);
 
-    if (likeDoc.exists()) {
-        // Unlike
+    if (likeSnap.exists()) {
+        // Unlike post
         batch.delete(likeRef);
         batch.update(postRef, {
             'engagement.likes': increment(-1),
             updatedAt: serverTimestamp()
         });
-        // Sync to RTDB
         await update(rtEngagementRef, {
             likes: rtIncrement(-1)
         });
     } else {
-        // Like
+        // Like post
         batch.set(likeRef, {
             userId,
-            targetId: postId,
-            targetType: 'post',
             createdAt: serverTimestamp()
         });
         batch.update(postRef, {
             'engagement.likes': increment(1),
             updatedAt: serverTimestamp()
         });
-        // Sync to RTDB
         await update(rtEngagementRef, {
             likes: rtIncrement(1)
         });
     }
 
-    return batch.commit();
+    await batch.commit();
 }
 
 export async function checkIfUserLikedPost(userId: string, postId: string) {
-    const likeId = `${userId}_${postId}`;
-    const likeRef = doc(db, COLLECTIONS.LIKES, likeId);
+    const likeRef = doc(db, COLLECTIONS.POSTS, postId, 'likes', userId);
     const likeSnap = await getDoc(likeRef);
     return likeSnap.exists();
 }
 
 export async function addComment(userId: string, postId: string, content: string) {
     const batch = writeBatch(db);
-    const commentRef = doc(collection(db, COLLECTIONS.COMMENTS));
+    const commentRef = doc(collection(db, COLLECTIONS.POSTS, postId, 'comments'));
     const postRef = doc(db, COLLECTIONS.POSTS, postId);
     const rtEngagementRef = ref(rtdb, `engagement/posts/${postId}`);
 
     batch.set(commentRef, {
-        postId,
         userId,
         content,
         likes: 0,
@@ -331,6 +328,33 @@ export async function addComment(userId: string, postId: string, content: string
 
     await batch.commit();
     return commentRef.id;
+}
+
+export async function getComments(postId: string, limitCount = 50) {
+    const commentsCollectionRef = collection(db, COLLECTIONS.POSTS, postId, 'comments');
+    const comments = await getDocuments(
+        commentsCollectionRef,
+        [
+            limit(limitCount)
+        ]
+    );
+
+    // Enrich with user data
+    const enrichedComments = await Promise.all(comments.map(async (comment: any) => {
+        const user = await getUserById(comment.userId);
+        return { ...comment, user };
+    }));
+
+    // Sort newest first on the client to avoid requiring a Firestore composite index
+    enrichedComments.sort((a: any, b: any) => {
+        const aDate = a.createdAt?.toDate?.() ? a.createdAt.toDate() : a.createdAt;
+        const bDate = b.createdAt?.toDate?.() ? b.createdAt.toDate() : b.createdAt;
+        const aTime = aDate?.getTime?.() || 0;
+        const bTime = bDate?.getTime?.() || 0;
+        return bTime - aTime;
+    });
+
+    return enrichedComments;
 }
 
 // Convert Firestore Timestamp to Date

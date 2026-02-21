@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft, Share2, Heart, Captions, ChevronUp, ChevronDown, Play } from "lucide-react";
+import { Navbar } from "@/components/Navbar";
 import { VIDEOS, TABS, BG_COLORS, type Tab } from "../data";
 
 function WatchContent() {
@@ -95,6 +96,7 @@ function WatchContent() {
 
     return (
         <div className="min-h-screen bg-[#0e0e0e] flex flex-col items-center justify-center relative">
+            <Navbar />
 
             {/* Back button */}
             <button

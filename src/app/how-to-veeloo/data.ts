@@ -6,7 +6,7 @@ export type VideoItem = {
 
 export const VIDEOS: Record<string, VideoItem[]> = {
     Creator: [
-        { title: "Getting Started", thumbnail: "", url: "https://res.cloudinary.com/dwm2smxdk/video/upload/v1771587168/threadsdownloader.com_81ed84_oumthv.mp4" },
+        { title: "Getting Started", thumbnail: "https://res.cloudinary.com/dwm2smxdk/image/upload/v1771588113/Screenshot_2026-02-16_164134_rcea6b.png", url: "https://res.cloudinary.com/dwm2smxdk/video/upload/v1771587168/threadsdownloader.com_81ed84_oumthv.mp4" },
         { title: "Posting Content", thumbnail: "", url: "" },
         { title: "The Perfect Streaming Spot", thumbnail: "", url: "" },
         { title: "Lighting & Camera", thumbnail: "", url: "" },

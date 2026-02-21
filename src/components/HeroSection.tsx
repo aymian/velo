@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { TypewriterEffect } from "@/components/ui/TypewriterEffect";
 import Link from "next/link";
 import { useAuthStore } from "@/lib/store";
-import { ContentFeed } from "./feed/ContentFeed";
 
 export function HeroSection() {
   const { isAuthenticated, isLoading } = useAuthStore();
@@ -17,7 +16,10 @@ export function HeroSection() {
         <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/90 pointer-events-none z-0" />
 
         <div className="relative z-10 container mx-auto">
-          <ContentFeed />
+          <div className="text-white text-center">
+            <h2 className="text-3xl font-bold mb-4">Welcome back!</h2>
+            <p className="text-lg text-white/80">Your personalized content feed is coming soon.</p>
+          </div>
         </div>
       </section>
     );

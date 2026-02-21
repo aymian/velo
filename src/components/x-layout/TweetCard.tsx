@@ -1,16 +1,15 @@
-"use client";
+ "use client";
 
 import React from "react";
 import { Post, User } from "@/lib/firebase/collections";
-import { CustomVideoPlayer } from "../video/CustomVideoPlayer";
 import { CardDropdown } from "./CardDropdown";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Heart, MessageCircle, Send, Bookmark, MoreHorizontal } from "lucide-react";
 import Link from "next/link";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
-import { usePostLiked, useToggleLike, usePostEngagement } from "@/lib/firebase/hooks";
-import { useAuthStore } from "@/lib/store";
+import { usePostLiked, useToggleLikePost, usePostEngagement } from "@/lib/firebase/hooks";
+import { useAuthStore, useNotificationStore } from "@/lib/store";
 import { CommentModal } from "./CommentModal";
 import { cn } from "@/lib/utils";
 import { VerifiedBadge } from "../ui/VerifiedBadge";
@@ -24,34 +23,84 @@ interface TweetCardProps {
 export function TweetCard({ post }: TweetCardProps) {
     const { creator } = post;
     const { user: currentUser } = useAuthStore();
+    const { addNotification } = useNotificationStore();
     const timeAgo = dayjs(post.createdAt?.toDate?.() || post.createdAt).fromNow(true);
 
     const [isCommentModalOpen, setIsCommentModalOpen] = React.useState(false);
 
     // Likes & Realtime Engagement Logic
     const { data: isLiked } = usePostLiked(currentUser?.uid, post.id);
-    const toggleLikeMutation = useToggleLike();
+    const toggleLikeMutation = useToggleLikePost();
     const rtEngagement = usePostEngagement(post.id);
 
-    // Merge fallback counts (Firestore) with real-time counts (RTDB)
     const displayLikes = rtEngagement.likes || post.engagement?.likes || 0;
     const displayComments = rtEngagement.comments || post.engagement?.comments || 0;
 
+    const [localLiked, setLocalLiked] = React.useState<boolean | null>(null);
+    const [localLikes, setLocalLikes] = React.useState<number | null>(null);
+    const [localComments, setLocalComments] = React.useState<number | null>(null);
+
+    React.useEffect(() => {
+        if (typeof isLiked !== "undefined") {
+            setLocalLiked(!!isLiked);
+        }
+    }, [isLiked]);
+
+    React.useEffect(() => {
+        setLocalLikes(displayLikes);
+    }, [displayLikes]);
+
+    React.useEffect(() => {
+        setLocalComments(displayComments);
+    }, [displayComments]);
+
+    const likesToShow = localLikes ?? displayLikes;
+    const commentsToShow = localComments ?? displayComments;
+
     const handleLike = async () => {
-        if (!currentUser) return;
+        const currentlyLiked = localLiked ?? !!isLiked;
+        if (!currentUser) {
+            addNotification({
+                type: "error",
+                message: "You need to sign in to like posts.",
+            });
+            return;
+        }
         try {
             await toggleLikeMutation.mutateAsync({
                 userId: currentUser.uid,
                 postId: post.id
             });
+            setLocalLiked(!currentlyLiked);
+            setLocalLikes((prev) => {
+                const base = typeof prev === "number" ? prev : displayLikes;
+                return base + (currentlyLiked ? -1 : 1);
+            });
         } catch (error) {
-            console.error("Error toggling like:", error);
+            addNotification({
+                type: "error",
+                message: (error as any)?.message || "Failed to update like. Please try again.",
+            });
         }
     };
 
     // Extract hashtags from caption
     const hashtags = post.caption?.match(/#[a-z0-9]+/gi) || [];
     const cleanCaption = post.caption?.replace(/#[a-z0-9]+/gi, "").trim();
+
+    const hasVideo = !!post.videoUrl;
+    const hasImageAsset = !!post.imageUrl || (!!post.cloudinaryPublicId && !post.videoUrl);
+
+    const videoSrc = hasVideo
+        ? post.videoUrl!
+        : post.cloudinaryPublicId
+            ? `https://res.cloudinary.com/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/video/upload/q_auto,f_auto/${post.cloudinaryPublicId}.mp4`
+            : "";
+
+    const imageSrc = post.imageUrl
+        || (post.cloudinaryPublicId
+            ? `https://res.cloudinary.com/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload/q_auto,f_auto/${post.cloudinaryPublicId}.jpg`
+            : "");
 
     return (
         <div className="flex flex-col w-full max-w-[350px] mx-auto mb-12 animate-in fade-in duration-500">
@@ -90,20 +139,22 @@ export function TweetCard({ post }: TweetCardProps) {
 
             {/* 2. MEDIA - Reduced Height (Instagram Portrait Standard 4:5) */}
             <div className="relative w-full overflow-hidden rounded-[2rem] border border-white/5 bg-black aspect-[4/5] shadow-lg group">
-                {(post.videoUrl || (post.cloudinaryPublicId && !post.caption?.toLowerCase().includes("pic") && !post.caption?.toLowerCase().includes("img"))) ? (
-                    <CustomVideoPlayer
-                        id={post.id}
-                        url={post.cloudinaryPublicId
-                            ? `https://res.cloudinary.com/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/video/upload/q_auto,f_auto/${post.cloudinaryPublicId}.mp4`
-                            : post.videoUrl || ""
-                        }
-                        poster={post.cloudinaryPublicId ? `https://res.cloudinary.com/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/video/upload/so_0,q_auto,f_auto/${post.cloudinaryPublicId}.jpg` : undefined}
+                {hasVideo && videoSrc ? (
+                    <video
+                        src={videoSrc}
+                        poster={post.cloudinaryPublicId
+                            ? `https://res.cloudinary.com/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/video/upload/so_0,q_auto,f_auto/${post.cloudinaryPublicId}.jpg`
+                            : undefined}
                         className="w-full h-full object-cover"
-                        autoPlay={true}
+                        autoPlay
+                        muted
+                        playsInline
+                        loop
+                        controls={false}
                     />
-                ) : post.cloudinaryPublicId ? (
+                ) : hasImageAsset && imageSrc ? (
                     <img
-                        src={`https://res.cloudinary.com/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload/q_auto,f_auto/${post.cloudinaryPublicId}.jpg`}
+                        src={imageSrc}
                         alt="Post Media"
                         className="w-full h-full object-cover"
                         loading="lazy"
@@ -145,7 +196,7 @@ export function TweetCard({ post }: TweetCardProps) {
             {/* 4. FEEDBACK & CAPTION */}
             <div className="px-2 space-y-1">
                 <div className="text-[13px] font-bold mb-1">
-                    {displayLikes.toLocaleString()} likes
+                    {likesToShow.toLocaleString()} likes
                 </div>
 
                 <div className="text-[14px] leading-snug">
@@ -171,7 +222,7 @@ export function TweetCard({ post }: TweetCardProps) {
                     onClick={() => setIsCommentModalOpen(true)}
                     className="text-[13px] text-white/40 block pt-1 hover:text-white/60 transition-colors"
                 >
-                    View all {displayComments.toLocaleString()} comments
+                    View all {commentsToShow.toLocaleString()} comments
                 </button>
             </div>
 
@@ -180,6 +231,12 @@ export function TweetCard({ post }: TweetCardProps) {
                 isOpen={isCommentModalOpen}
                 onClose={() => setIsCommentModalOpen(false)}
                 post={post}
+                onCommentAdded={() =>
+                    setLocalComments((prev) => {
+                        const base = typeof prev === "number" ? prev : displayComments;
+                        return base + 1;
+                    })
+                }
             />
         </div>
     );

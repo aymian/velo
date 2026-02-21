@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
     Share2,
@@ -114,6 +114,8 @@ export default function UserProfilePage() {
     const displayName = (userData as any)?.displayName || (userData as any)?.username || username;
     const isVerified = !!(userData?.verified || (userData?.followers && userData.followers >= 1));
 
+    const router = useRouter();
+
     // Stats formatting helper
     const formatStat = (num: number) => {
         if (num >= 1000) return (num / 1000).toFixed(2) + "K";
@@ -125,9 +127,7 @@ export default function UserProfilePage() {
             <Navbar />
 
             <div className="relative z-10 max-w-4xl mx-auto pt-24 px-6 pb-20">
-                {/* 👑 PREMIUM PROFILE HEADER (SHARP DESIGN) */}
-                <div className="flex items-start gap-6 mb-10">
-                    {/* AVATAR */}
+                <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6 mb-10">
                     <div className="relative shrink-0">
                         <div className="w-24 h-24 md:w-32 md:h-32 rounded-full overflow-hidden border border-white/5 bg-[#1a1a1a]">
                             <img
@@ -138,23 +138,21 @@ export default function UserProfilePage() {
                         </div>
                     </div>
 
-                    {/* IDENTITY & STATS */}
-                    <div className="flex-1 min-w-0 pt-1">
-                        <div className="flex items-center justify-between w-full mb-4">
-                            <div className="flex items-center gap-2">
+                    <div className="flex-1 min-w-0 pt-1 w-full">
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between w-full mb-4">
+                            <div className="flex items-center gap-2 justify-center sm:justify-start">
                                 <h1 className="text-2xl font-bold tracking-tight text-white">
                                     {displayName}
                                 </h1>
                                 <VerifiedBadge showOnCondition={isVerified} size={20} />
                             </div>
-                            <div className="flex items-center gap-4 text-white/40">
+                            <div className="flex items-center gap-4 text-white/40 justify-center sm:justify-end">
                                 <Share2 className="w-5 h-5 cursor-pointer hover:text-white transition-colors" />
                                 <MoreHorizontal className="w-5 h-5 cursor-pointer hover:text-white transition-colors" />
                             </div>
                         </div>
 
-                        {/* STATS (Sharp Design) */}
-                        <div className="flex items-center gap-8 mb-6">
+                        <div className="flex flex-wrap items-center gap-6 mb-6 justify-center sm:justify-start">
                             <div className="flex flex-col">
                                 <span className="text-xl font-bold text-white tracking-tight">
                                     {formatStat((userData as any)?.earned || 0)}
@@ -172,13 +170,12 @@ export default function UserProfilePage() {
                             </div>
                         </div>
 
-                        {/* ACTIONS (Sharp Capsule Design) */}
-                        <div className="flex items-center gap-3">
+                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full">
                             <button
                                 onClick={handleFollowToggle}
                                 disabled={followStatusLoading || followMutation.isPending || unfollowMutation.isPending || currentUser?.uid === targetUserId}
                                 className={cn(
-                                    "px-8 py-3 rounded-full font-bold text-[14px] transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2 min-w-[130px]",
+                                    "w-full sm:w-auto px-8 py-3 rounded-full font-bold text-[14px] transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2 min-w-[130px]",
                                     isFollowing
                                         ? "bg-[#1a1a1a] border border-white/10 text-white hover:bg-[#252525]"
                                         : "bg-gradient-to-r from-[#ff3b5c] to-[#ff4081] text-white hover:opacity-90"
@@ -188,12 +185,20 @@ export default function UserProfilePage() {
                                 {isFollowing ? "Following" : "Follow"}
                             </button>
 
-                            <button className="flex items-center justify-center gap-2 px-6 py-3 rounded-full bg-[#1a1a1a] border border-white/10 hover:bg-[#252525] transition-all active:scale-95 font-bold text-[14px] min-w-[110px]">
+                            <button
+                                disabled={!targetUserId}
+                                onClick={() => {
+                                    if (targetUserId) {
+                                        router.push(`/chat?uid=${targetUserId}`);
+                                    }
+                                }}
+                                className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3 rounded-full bg-[#1a1a1a] border border-white/10 hover:bg-[#252525] transition-all active:scale-95 font-bold text-[14px] min-w-[110px] disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
                                 <MessageCircle className="w-4 h-4" />
                                 Message
                             </button>
 
-                            <button className="flex items-center justify-center gap-2 px-6 py-3 rounded-full bg-[#1a1a1a] border border-white/10 hover:bg-[#252525] transition-all active:scale-95 font-bold text-[14px] min-w-[110px]">
+                            <button className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3 rounded-full bg-[#1a1a1a] border border-white/10 hover:bg-[#252525] transition-all active:scale-95 font-bold text-[14px] min-w-[110px]">
                                 <Gift className="w-4 h-4" />
                                 Send gift
                             </button>
@@ -201,9 +206,8 @@ export default function UserProfilePage() {
                     </div>
                 </div>
 
-                {/* 📋 PROFILE TABS (Sharp Design as requested - Icon top of text) */}
                 <div className="border-b border-white/5 mb-8 sticky top-[64px] bg-[#0a0a0a]/80 backdrop-blur-xl z-20">
-                    <div className="flex items-center justify-center md:justify-start gap-12 sm:gap-16 px-2">
+                    <div className="flex items-center justify-center md:justify-start gap-6 sm:gap-10 md:gap-12 px-2">
                         {tabs.map((tab) => {
                             const Icon = tab.icon;
                             const isActive = activeTab === tab.id;
