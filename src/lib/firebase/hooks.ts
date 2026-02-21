@@ -32,6 +32,7 @@ import {
   getComments
 } from './helpers';
 import React from 'react';
+import { Post, User } from './collections';
 
 // Query keys
 export const QUERY_KEYS = {
@@ -57,7 +58,10 @@ export function useUser(userId: string) {
 export function useUserByUsername(username: string) {
   return useQuery<User | null>({
     queryKey: QUERY_KEYS.userByUsername(username),
-    queryFn: () => getUserByUsername(username),
+    queryFn: async () => {
+      const user = await getUserByUsername(username);
+      return user as User | null;
+    },
     enabled: !!username,
     staleTime: 5 * 60 * 1000,
   });
@@ -97,9 +101,12 @@ export function usePost(postId: string) {
 }
 
 export function useUserPosts(userId: string, limitCount = 20) {
-  return useQuery({
+  return useQuery<Post[]>({
     queryKey: QUERY_KEYS.userPosts(userId),
-    queryFn: () => getUserPosts(userId, limitCount),
+    queryFn: async () => {
+      const posts = await getUserPosts(userId, limitCount);
+      return posts as Post[];
+    },
     enabled: !!userId,
   });
 }

@@ -274,7 +274,7 @@ export default function UserProfilePage() {
                                             </div>
                                         </div>
                                     ) : (
-                                        <TweetCard key={post.id} post={{ ...post, creator: (userData as User) }} />
+                                        <TweetCard key={post.id} post={{ ...post, ...(userData && { creator: userData }) }} />
                                     )
                                 ))}
                             </div>
