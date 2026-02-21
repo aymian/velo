@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
-import { getFollowers } from "@/lib/firebase/firestore"; // TODO: implement getFollowers or adjust import path
+import { getFollowers } from "@/lib/firebase/helpers";
 import { User } from "@/lib/firebase/collections"; // Assuming User interface is here
 import Link from "next/link";
 
@@ -20,7 +20,18 @@ interface FollowersModalProps {
 export function FollowersModal({ isOpen, onClose, userId }: FollowersModalProps) {
   const { data: followers, isLoading } = useQuery<User[]>({
     queryKey: ["followers", userId],
-    queryFn: () => getFollowers(userId),
+    queryFn: async () => {
+      const data = await getFollowers(userId);
+      return data.map((u: any) => ({
+        uid: u.uid,
+        email: u.email,
+        displayName: u.displayName,
+        username: u.username,
+        photoURL: u.photoURL,
+        createdAt: u.createdAt || null,
+        updatedAt: u.updatedAt || null,
+      })) as User[];
+    },
     enabled: isOpen && !!userId,
   });
 
@@ -39,10 +50,10 @@ export function FollowersModal({ isOpen, onClose, userId }: FollowersModalProps)
 
           <div className="flex-1 overflow-y-auto pr-2 -mr-2">
             {isLoading && <p className="text-white/40">Loading followers...</p>}
-            {!isLoading && followers?.length === 0 && (
+            {!isLoading && (!followers || (Array.isArray(followers) && followers.length === 0)) && (
               <p className="text-white/40">No followers found.</p>
             )}
-            {followers?.map((follower) => (
+            {Array.isArray(followers) && followers.map((follower: User) => (
               <Link href={`/@${follower.username || follower.uid}`} key={follower.uid} onClick={onClose}>
                 <div className="flex items-center gap-3 py-2 hover:bg-white/5 rounded-md px-2 -mx-2 transition-colors">
                   <Avatar className="w-10 h-10 border border-white/10">
@@ -51,7 +62,7 @@ export function FollowersModal({ isOpen, onClose, userId }: FollowersModalProps)
                       {follower.displayName?.charAt(0) || follower.username?.charAt(0) || 'U'}
                     </AvatarFallback>
                   </Avatar>
-                  <div>
+                  <div className="flex-1 min-w-0">
                     <p className="text-sm font-bold text-white">{follower.displayName || follower.username}</p>
                     <p className="text-xs text-white/60">@{follower.username || 'user'}</p>
                   </div>

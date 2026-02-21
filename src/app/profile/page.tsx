@@ -17,7 +17,7 @@ import {
     Columns,
     Shield
 } from "lucide-react";
-import { VerificationBadge } from "@/components/VerificationBadge";
+import { VerifiedBadge } from "@/components/ui/VerifiedBadge";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/lib/store";
 import { Navbar } from "@/components/Navbar";
@@ -77,7 +77,7 @@ export default function ProfilePage() {
                             <div>
                                 <div className="flex items-center gap-3 mb-0.5">
                                     <h1 className="text-[20px] font-semibold leading-tight">{user?.displayName || "Funny Badger"}</h1>
-                                    <VerificationBadge status={user?.verificationStatus || 'unverified'} />
+                                    <VerifiedBadge showOnCondition={user?.verified} />
                                 </div>
                                 <p className="text-white/40 text-[13px]">Rwanda, 19 y.o.</p>
                             </div>

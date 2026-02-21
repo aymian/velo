@@ -245,11 +245,24 @@ export async function checkFollowing(followerId: string, followingId: string) {
     return docSnap.exists();
 }
 
-export async function getFollowers(userId: string) {
-    return getDocuments(
+export async function getFollowers(userId: string): Promise<User[]> {
+    const followDocs = await getDocuments(
         COLLECTIONS.FOLLOWS,
         [where('followingId', '==', userId)]
     );
+
+    const followerIds = followDocs.map((doc: any) => doc.followerId);
+
+    if (followerIds.length === 0) {
+        return [];
+    }
+
+    // Fetch user profiles for each follower
+    const followerPromises = followerIds.map(id => getUserById(id));
+    const followers = await Promise.all(followerPromises);
+
+    // Filter out any null results if a user document wasn't found
+    return followers.filter((user): user is User => user !== null) as User[];
 }
 
 export async function getFollowing(userId: string) {
