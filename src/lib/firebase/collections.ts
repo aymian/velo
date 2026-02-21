@@ -10,9 +10,46 @@ export const COLLECTIONS = {
     MESSAGES: 'messages',
     LIVESTREAMS: 'livestreams',
     REPORTS: 'reports',
+    STORIES: 'stories',
 } as const;
 
 // User type
+// Story type
+export interface StorySticker {
+    id: string;
+    type: string;
+    content: string;
+    x: number;
+    y: number;
+    scale?: number;
+    rotation?: number;
+}
+
+export interface Story {
+    id: string;
+    userId: string;
+    mediaUrl: string;
+    mediaType: 'image' | 'video';
+    caption?: string;
+    textOverlay?: {
+        text: string;
+        color: string;
+        fontSize: number;
+        fontFamily: string;
+        textAlign: string;
+        hasBg: boolean;
+        x: number;
+        y: number;
+    };
+    stickers?: StorySticker[];
+    timer?: number;
+    tags?: string[];
+    visibility: 'public' | 'fans' | 'premium';
+    price?: number;
+    createdAt: any;
+    expiresAt: any;
+}
+
 export interface User {
     uid: string;
     email: string;

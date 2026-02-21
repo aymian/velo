@@ -21,10 +21,43 @@ import {
     writeBatch,
     CollectionReference
 } from 'firebase/firestore';
-import { ref, set, update, increment as rtIncrement } from 'firebase/database';
-import { db, rtdb } from './config';
-import { COLLECTIONS } from './collections';
+import { ref as rtRef, set, update, increment as rtIncrement } from 'firebase/database';
+import {
+    ref as storageRef,
+    uploadBytesResumable,
+    getDownloadURL
+} from 'firebase/storage';
+import { db, rtdb, storage } from './config';
+import { COLLECTIONS, Story } from './collections';
 import { User } from 'firebase/auth';
+
+// Storage helper
+export async function uploadFile(
+    file: File,
+    path: string,
+    onProgress?: (progress: number) => void
+): Promise<string> {
+    return new Promise((resolve, reject) => {
+        const fileRef = storageRef(storage, path);
+        const uploadTask = uploadBytesResumable(fileRef, file);
+
+        uploadTask.on(
+            'state_changed',
+            (snapshot) => {
+                const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                if (onProgress) onProgress(progress);
+            },
+            (error) => {
+                console.error('Upload error:', error);
+                reject(error);
+            },
+            async () => {
+                const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+                resolve(downloadURL);
+            }
+        );
+    });
+}
 
 // Generic function to get a document by ID
 export async function getDocument<T = DocumentData>(
@@ -183,6 +216,11 @@ export async function deletePost(postId: string) {
     return deleteDocument(COLLECTIONS.POSTS, postId);
 }
 
+// Story-specific helpers
+export async function createStory(storyId: string, storyData: any) {
+    return createDocument(COLLECTIONS.STORIES, storyId, storyData);
+}
+
 // Follow helpers
 export async function followUser(followerId: string, followingId: string) {
     const batch = writeBatch(db);
@@ -277,7 +315,7 @@ export async function toggleLikePost(userId: string, postId: string) {
     const batch = writeBatch(db);
     const likeRef = doc(db, COLLECTIONS.POSTS, postId, 'likes', userId);
     const postRef = doc(db, COLLECTIONS.POSTS, postId);
-    const rtEngagementRef = ref(rtdb, `engagement/posts/${postId}`);
+    const rtEngagementRef = rtRef(rtdb, `engagement/posts/${postId}`);
 
     const likeSnap = await getDoc(likeRef);
 
@@ -319,7 +357,7 @@ export async function addComment(userId: string, postId: string, content: string
     const batch = writeBatch(db);
     const commentRef = doc(collection(db, COLLECTIONS.POSTS, postId, 'comments'));
     const postRef = doc(db, COLLECTIONS.POSTS, postId);
-    const rtEngagementRef = ref(rtdb, `engagement/posts/${postId}`);
+    const rtEngagementRef = rtRef(rtdb, `engagement/posts/${postId}`);
 
     batch.set(commentRef, {
         userId,

@@ -67,6 +67,13 @@ service cloud.firestore {
       return diff.changedKeys().hasOnly(['followers', 'following', 'updatedAt']);
     }
 
+    // Stories (Transmission Content)
+    match /stories/{storyId} {
+      allow read: if true;
+      allow create: if isSignedIn();
+      allow update, delete: if isSignedIn() && resource.data.userId == request.auth.uid;
+    }
+
     // Notifications
     match /notifications/{notificationId} {
       allow read: if isSignedIn() && resource.data.userId == request.auth.uid;
