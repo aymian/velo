@@ -127,8 +127,7 @@ function WatchContent() {
                             playsInline
                             onPlay={() => setIsPlaying(true)}
                             onPause={() => setIsPlaying(false)}
-                            track={captionsOn ? undefined : undefined}
-                        />
+                            />
                     ) : (
                         <div className={`absolute inset-0 ${bgColor}`} />
                     )}
