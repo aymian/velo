@@ -111,6 +111,7 @@ export const VideoPost = memo(function VideoPost({
                     loop
                     playsInline
                     muted
+                    controls
                 />
 
                 {/* Caption + Tags overlay at bottom */}

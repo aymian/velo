@@ -150,7 +150,7 @@ export function TweetCard({ post }: TweetCardProps) {
                         muted
                         playsInline
                         loop
-                        controls={false}
+                        controls
                     />
                 ) : hasImageAsset && imageSrc ? (
                     <img

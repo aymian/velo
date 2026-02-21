@@ -30,7 +30,7 @@ import { TweetCard } from "@/components/x-layout/TweetCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { FeedSkeleton } from "@/components/FeedSkeleton";
-import { VerifiedBadge } from "@/components/ui/VerifiedBadge";
+import { VerificationBadge } from "@/components/VerificationBadge";
 import { User } from "@/lib/firebase/collections";
 
 export default function UserProfilePage() {
@@ -144,7 +144,7 @@ export default function UserProfilePage() {
                                 <h1 className="text-2xl font-bold tracking-tight text-white">
                                     {displayName}
                                 </h1>
-                                <VerifiedBadge showOnCondition={isVerified} size={20} />
+                                <VerificationBadge status={userData?.verified ? 'verified' : 'unverified'} />
                             </div>
                             <div className="flex items-center gap-4 text-white/40 justify-center sm:justify-end">
                                 <Share2 className="w-5 h-5 cursor-pointer hover:text-white transition-colors" />
@@ -162,11 +162,17 @@ export default function UserProfilePage() {
                                     <span className="text-[11px] font-semibold uppercase tracking-wider">Earned</span>
                                 </div>
                             </div>
-                            <div className="flex flex-col">
+                            <div className="flex flex-col cursor-pointer" onClick={() => console.log("Open followers modal")}>
                                 <span className="text-xl font-bold text-white tracking-tight">
                                     {formatStat((userData as any)?.followers || 0)}
                                 </span>
                                 <span className="text-[11px] font-semibold uppercase tracking-wider opacity-40">Followers</span>
+                            </div>
+                            <div className="flex flex-col cursor-pointer" onClick={() => console.log("Open following modal")}>
+                                <span className="text-xl font-bold text-white tracking-tight">
+                                    {formatStat((userData as any)?.following || 0)}
+                                </span>
+                                <span className="text-[11px] font-semibold uppercase tracking-wider opacity-40">Following</span>
                             </div>
                         </div>
 
