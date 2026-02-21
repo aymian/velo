@@ -30,6 +30,9 @@ export default function Home() {
 
       {/* Hide Trending Now Section for authenticated users */}
       {!isAuthenticated && <TrendingNow />}
+
+      {/* Footer */}
+      {!isAuthenticated && <Footer />}
     </main>
   );
 }

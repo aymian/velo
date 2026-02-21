@@ -20,6 +20,8 @@ export const metadata: Metadata = {
 import { Providers } from "@/components/providers/QueryProvider";
 import { FloatingActions } from "@/components/FloatingActions";
 
+import { Suspense } from "react";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -29,7 +31,9 @@ export default function RootLayout({
     <html lang="en" className={lato.variable}>
       <body className="antialiased bg-black min-h-screen">
         <Providers>
-          {children}
+          <Suspense fallback={<div>Loading...</div>}>
+            {children}
+          </Suspense>
           <FloatingActions />
         </Providers>
       </body>
