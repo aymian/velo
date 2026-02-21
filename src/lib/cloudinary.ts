@@ -1,13 +1,13 @@
 import axios from 'axios';
+import { CLOUDINARY_CONFIG } from './cloudinary-config';
 
 export async function uploadToCloudinary(
     file: File | Blob,
     onProgress?: (progress: number) => void
 ): Promise<string> {
-    const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
-    const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || 'ml_default';
+    const { cloudName, uploadPreset } = CLOUDINARY_CONFIG;
 
-    if (!cloudName || cloudName === 'your_cloud_name_here') {
+    if (!cloudName) {
         throw new Error("Cloudinary Cloud Name is not configured.");
     }
 

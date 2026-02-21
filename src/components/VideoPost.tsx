@@ -5,6 +5,7 @@ import { Lock, Loader2 } from 'lucide-react';
 import { usePlayerStore } from '@/lib/store';
 import CustomVideoPlayer from './video/CustomVideoPlayer';
 import { cn } from '@/lib/utils';
+import { CLOUDINARY_CONFIG } from '@/lib/cloudinary-config';
 
 interface VideoPostProps {
     id: string;
@@ -62,7 +63,7 @@ export const VideoPost = memo(function VideoPost({
     }, [currentVideoId, id, setCurrentVideo]);
 
     const finalUrl = publicId
-        ? `https://res.cloudinary.com/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/video/upload/q_auto,f_auto/${publicId}.mp4`
+        ? `https://res.cloudinary.com/${CLOUDINARY_CONFIG.cloudName}/video/upload/q_auto,f_auto/${publicId}.mp4`
         : videoUrl;
 
     if (status === 'processing') {
@@ -90,7 +91,7 @@ export const VideoPost = memo(function VideoPost({
                     <CustomVideoPlayer
                         id={id}
                         url={finalUrl}
-                        poster={publicId ? `https://res.cloudinary.com/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/video/upload/so_0,w_400,q_auto,f_auto/${publicId}.jpg` : undefined}
+                        poster={publicId ? `https://res.cloudinary.com/${CLOUDINARY_CONFIG.cloudName}/video/upload/so_0,w_400,q_auto,f_auto/${publicId}.jpg` : undefined}
                         className={cn(
                             "relative w-full h-full object-contain z-10",
                             isLocked && blurEnabled && "blur-3xl scale-110 opacity-30"

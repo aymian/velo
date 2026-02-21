@@ -8,6 +8,15 @@ import {
   useInfiniteQuery,
 } from '@tanstack/react-query';
 import { onValue, ref as rtRef } from 'firebase/database';
+import {
+  onSnapshot,
+  doc as fireDoc,
+  collection as fireCollection,
+  query as fireQuery,
+  where as fireWhere,
+  orderBy as fireOrderBy,
+  limit as fireLimit
+} from 'firebase/firestore';
 import { db, rtdb } from './config';
 import {
   getDocument,
@@ -32,7 +41,7 @@ import {
   getComments
 } from './helpers';
 import React from 'react';
-import { Post, User } from './collections';
+import { Post, User, COLLECTIONS } from './collections';
 
 // Query keys
 export const QUERY_KEYS = {
@@ -342,4 +351,67 @@ export function usePostEngagement(postId: string) {
   }, [postId]);
 
   return engagement;
+}
+
+
+export function useUserRealtime(userId: string | undefined) {
+  const [userData, setUserData] = React.useState<any>(null);
+  const [isLoading, setIsLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    if (!userId) {
+      setIsLoading(false);
+      return;
+    }
+
+    const docRef = fireDoc(db, COLLECTIONS.USERS, userId);
+    const unsubscribe = onSnapshot(docRef, (snapshot) => {
+      if (snapshot.exists()) {
+        setUserData({ uid: snapshot.id, ...snapshot.data() });
+      }
+      setIsLoading(false);
+    }, (error) => {
+      console.error("Error in useUserRealtime:", error);
+      setIsLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, [userId]);
+
+  return { data: userData, isLoading };
+}
+
+export function useUserPostsRealtime(userId: string | undefined, limitCount = 50) {
+  const [posts, setPosts] = React.useState<Post[]>([]);
+  const [isLoading, setIsLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    if (!userId) {
+      setIsLoading(false);
+      return;
+    }
+
+    const q = fireQuery(
+      fireCollection(db, COLLECTIONS.POSTS),
+      fireWhere('userId', '==', userId),
+      fireOrderBy('createdAt', 'desc'),
+      fireLimit(limitCount)
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const postsData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as Post[];
+      setPosts(postsData);
+      setIsLoading(false);
+    }, (error) => {
+      console.error("Error in useUserPostsRealtime:", error);
+      setIsLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, [userId, limitCount]);
+
+  return { data: posts, isLoading };
 }

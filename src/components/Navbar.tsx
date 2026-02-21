@@ -15,7 +15,8 @@ import {
   Crown,
   Info,
   Mail,
-  ShoppingBag
+  ShoppingBag,
+  Bookmark
 } from "lucide-react";
 import { useAuthStore, useSearchStore } from "@/lib/store";
 import { useOnboardingStore } from "@/store/onboarding-store";
@@ -35,16 +36,16 @@ export function Navbar() {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
 
-interface NavItem {
-  name: string;
-  icon: React.ForwardRefExoticComponent<Omit<React.SVGProps<SVGSVGElement>, "ref"> & React.RefAttributes<SVGSVGElement>>;
-  href: string;
-  badge?: string | number;
-}
+  interface NavItem {
+    name: string;
+    icon: React.ForwardRefExoticComponent<Omit<React.SVGProps<SVGSVGElement>, "ref"> & React.RefAttributes<SVGSVGElement>>;
+    href: string;
+    badge?: string | number;
+  }
 
   const navItems: NavItem[] = [
     { name: "For You", icon: ThumbsUp, href: "/" },
-    { name: "Following", icon: Users, href: "/following" },
+    { name: "Saved", icon: Bookmark, href: "/saved" },
     { name: "Explore", icon: Compass, href: "/explore" },
   ];
 

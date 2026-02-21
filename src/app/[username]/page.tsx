@@ -18,13 +18,16 @@ import {
     Video
 } from "lucide-react";
 import { Navbar } from "@/components/Navbar";
+import { CLOUDINARY_CONFIG } from "@/lib/cloudinary-config";
 import { useAuthStore } from "@/lib/store";
 import {
     useIsFollowing,
     useFollowUser,
     useUnfollowUser,
     useUserByUsername,
-    useUserPosts
+    useUserPosts,
+    useUserRealtime,
+    useUserPostsRealtime
 } from "@/lib/firebase/hooks";
 import { TweetCard } from "@/components/x-layout/TweetCard";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -55,13 +58,14 @@ export default function UserProfilePage() {
         return () => clearTimeout(timer);
     }, []);
 
-    // High-performance data fetching
-    const { data: userData, isLoading: userLoading } = useUserByUsername(username);
+    // Initial Fetch (Static) to get UID
+    const { data: initialUserData, isLoading: initialUserLoading } = useUserByUsername(username);
+    const targetUserId = initialUserData?.uid || (initialUserData as any)?.id;
 
-    // Fallback for ID
-    const targetUserId = userData?.uid || (userData as any)?.id;
+    // Real-time synchronization
+    const { data: userData, isLoading: userRealtimeLoading } = useUserRealtime(targetUserId);
+    const { data: posts, isLoading: postsLoading } = useUserPostsRealtime(targetUserId || "", 50);
 
-    const { data: posts, isLoading: postsLoading } = useUserPosts(targetUserId || "", 50);
     const { data: isFollowing, isLoading: followStatusLoading } = useIsFollowing(currentUser?.uid, targetUserId);
 
     const followMutation = useFollowUser();
@@ -93,7 +97,7 @@ export default function UserProfilePage() {
         { id: "cards", label: "Tango Cards", icon: Layers },
     ];
 
-    if (userLoading || forceLoading) {
+    if (initialUserLoading || forceLoading) {
         return (
             <div className="min-h-screen bg-black text-white relative">
                 <Navbar />
@@ -104,7 +108,7 @@ export default function UserProfilePage() {
         );
     }
 
-    if (!userData && !userLoading) {
+    if (!userData && !initialUserLoading && !userRealtimeLoading) {
         return (
             <div className="min-h-screen bg-black flex flex-col items-center justify-center gap-4 text-white">
                 <Navbar />
@@ -269,7 +273,7 @@ export default function UserProfilePage() {
                                     (activeTab === "all" || activeTab === "moments") ? (
                                         <div key={post.id} className="aspect-[3/4] bg-black overflow-hidden group relative cursor-pointer">
                                             <img
-                                                src={`https://res.cloudinary.com/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload/q_auto,f_auto,w_500,h_700,c_fill/${post.cloudinaryPublicId}.jpg`}
+                                                src={`https://res.cloudinary.com/${CLOUDINARY_CONFIG.cloudName}/image/upload/q_auto,f_auto,w_500,h_700,c_fill/${post.cloudinaryPublicId}.jpg`}
                                                 alt="Post"
                                                 className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                                                 loading="lazy"
