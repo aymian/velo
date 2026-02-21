@@ -30,7 +30,7 @@ export function FloatingChatButton() {
                     onClick={() => setIsOpen(!isOpen)}
                     className="relative group p-4 bg-[#0F0F0F] text-white rounded-full shadow-[0_10px_40px_rgba(0,0,0,0.8)] border border-white/5 hover:scale-110 active:scale-95 transition-all"
                 >
-                    <Send className="w-7 h-7 -rotate-12 translate-x-0.5" />
+                    <Send className="w-6 h-6 -rotate-[15deg] translate-x-0.5" strokeWidth={1.5} />
 
                     {/* Notification Badge */}
                     {!isOpen && (

@@ -25,11 +25,15 @@ import { UserDropdown } from "./UserDropdown";
 import { SearchOverlay } from "./SearchOverlay";
 import { ChatModal } from "./ChatModal";
 import { cn } from "@/lib/utils";
+import { useUserRealtime } from "@/lib/firebase/hooks";
+import { VerifiedBadge } from "./ui/VerifiedBadge";
 
 export function Navbar() {
   const router = useRouter();
   const pathname = usePathname();
-  const { user, isAuthenticated, clearUser } = useAuthStore();
+  const { user: authUser, isAuthenticated, clearUser } = useAuthStore();
+  const { data: userProfile } = useUserRealtime(authUser?.uid);
+  const user = userProfile || authUser;
   const { isOpen: isSearchOpen, setOpen: setIsSearchOpen } = useSearchStore();
   const { coins } = useOnboardingStore();
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
@@ -45,7 +49,7 @@ export function Navbar() {
 
   const navItems: NavItem[] = [
     { name: "For You", icon: ThumbsUp, href: "/" },
-    { name: "Saved", icon: Bookmark, href: "/saved" },
+    { name: "Following", icon: Users, href: "/following" },
     { name: "Explore", icon: Compass, href: "/explore" },
   ];
 
@@ -154,12 +158,20 @@ export function Navbar() {
                     @{user?.email?.split('@')[0] || "member"}
                   </span>
                 </div>
-                <div className="relative w-11 h-11 rounded-full border-2 border-white/10 group-hover:border-[#FF2D55]/50 transition-all overflow-hidden bg-[#1A1A1A]">
-                  <img
-                    src={user?.photoURL || `https://ui-avatars.com/api/?name=${user?.displayName}&background=333&color=fff`}
-                    alt="Profile"
-                    className="w-full h-full object-cover"
-                  />
+                <div className="relative">
+                  <div className="w-11 h-11 rounded-full border-2 border-white/10 group-hover:border-[#FF2D55]/50 transition-all overflow-hidden bg-[#1A1A1A]">
+                    <img
+                      src={user?.photoURL || `https://ui-avatars.com/api/?name=${user?.displayName}&background=333&color=fff`}
+                      alt="Profile"
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  {user?.verified && (
+                    <VerifiedBadge
+                      className="absolute -bottom-0.5 -right-0.5 z-10 bg-black rounded-full border border-white/10 p-[1px]"
+                      size={14}
+                    />
+                  )}
                 </div>
               </button>
 

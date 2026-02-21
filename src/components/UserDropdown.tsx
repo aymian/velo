@@ -75,27 +75,36 @@ export function UserDropdown({ user, onLogout, onClose }: UserDropdownProps) {
                 onClick={() => { router.push('/profile'); onClose(); }}
                 className="p-4 border-b border-white/5 bg-white/2 hover:bg-white/5 transition-colors cursor-pointer group"
             >
-                <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center justify-between mb-4 px-2">
                     <div className="flex items-center gap-4">
-                        <div className="w-14 h-14 rounded-full overflow-hidden ring-2 ring-pink-500/20 group-hover:ring-pink-500/40 transition-all">
-                            <img src={user?.photoURL || `https://ui-avatars.com/api/?name=${user?.displayName}&background=ff4081&color=fff`} alt="" className="w-full h-full object-cover" />
+                        <div className="relative">
+                            <div className="w-14 h-14 rounded-full overflow-hidden ring-2 ring-[#FF2D55]/20 group-hover:ring-[#FF2D55]/40 transition-all">
+                                <img src={user?.photoURL || `https://ui-avatars.com/api/?name=${user?.displayName}&background=333&color=fff`} alt="" className="w-full h-full object-cover" />
+                            </div>
+                            {user?.verified && (
+                                <div className="absolute -bottom-0.5 -right-0.5 z-10 bg-black rounded-full p-[1px]">
+                                    <svg viewBox="0 0 24 24" width="14" height="14" className="text-[#1DA1F2] fill-current">
+                                        <path d="M22.25 12c0-1.43-.88-2.67-2.19-3.34.46-1.39.2-2.9-.81-3.91s-2.52-1.27-3.91-.81c-.66-1.31-1.91-2.19-3.34-2.19s-2.67.88-3.33 2.19c-1.4-.46-2.91-.2-3.92.81s-1.27 2.52-.81 3.91c-1.31.67-2.19 1.91-2.19 3.34s.88 2.67 2.19 3.34c-.46 1.39-.21 2.9.8 3.91s2.52 1.27 3.91.81c.67 1.31 1.91 2.19 3.34 2.19s2.68-.88 3.34-2.19c1.39.46 2.9.2 3.91-.81s1.27-2.52.81-3.91c1.31-.67 2.19-1.91 2.19-3.34zM11.66 16.91l-3.5-3.5 1.41-1.41 2.09 2.08 4.59-4.58 1.41 1.41-6 6z" />
+                                    </svg>
+                                </div>
+                            )}
                         </div>
                         <div className="flex flex-col">
-                            <h2 className="text-[17px] font-bold text-white leading-tight">
+                            <h2 className="text-[17px] font-bold text-white leading-tight flex items-center gap-1.5">
                                 {user?.displayName || user?.email?.split('@')[0] || "User"}
                             </h2>
-                            <div className="flex items-center gap-3 mt-1">
+                            <div className="flex items-center gap-3 mt-1.5">
                                 <div className="flex items-center gap-1.5">
                                     <Gem className="w-3.5 h-3.5 text-white/40" />
-                                    <span className="text-[13px] font-bold text-white/80">7</span>
+                                    <span className="text-[13px] font-bold text-white/80">{user?.earned || 0}</span>
                                 </div>
                                 <div className="flex items-center gap-1.5">
                                     <Users className="w-3.5 h-3.5 text-white/40" />
-                                    <span className="text-[13px] font-bold text-white/80">1</span>
+                                    <span className="text-[13px] font-bold text-white/80">{user?.followers || 0}</span>
                                 </div>
                                 <div className="flex items-center gap-1.5">
                                     <Zap className="w-3.5 h-3.5 text-white/40" />
-                                    <span className="text-[13px] font-bold text-white/80">0</span>
+                                    <span className="text-[13px] font-bold text-white/80">{user?.energy || 0}</span>
                                 </div>
                             </div>
                         </div>

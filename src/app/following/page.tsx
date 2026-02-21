@@ -23,7 +23,7 @@ export default function FollowingPage() {
     if (!isAuthenticated) return null;
 
     return (
-        <div className="min-h-screen bg-background text-white selection:bg-pink-500/30 font-sans">
+        <div className="min-h-screen bg-black text-white selection:bg-pink-500/30 font-sans">
             <Navbar />
 
             <div className="max-w-[1300px] mx-auto flex pt-16">
@@ -32,16 +32,18 @@ export default function FollowingPage() {
                     <XSidebar />
                 </header>
 
-                {/* Main Content */}
-                <main className="flex-grow sm:ml-[72px] xl:ml-[275px] min-h-screen flex">
-                    {/* Center Column - Following Feed */}
-                    <div className="flex-grow max-w-[460px] border-r border-white/5 min-h-screen bg-background">
-                        <FollowingFeed />
-                    </div>
+                {/* Main Content - No Right Sidebar */}
+                <main className="flex-grow sm:ml-[72px] xl:ml-[275px] min-h-screen">
+                    <div className="w-full min-h-screen border-x border-white/5 bg-[#0d0d0d]">
+                        {/* Header */}
+                        <div className="sticky top-16 bg-black/80 backdrop-blur-xl z-20 px-6 py-4 border-b border-white/5">
+                            <h1 className="text-xl font-black tracking-tight">Following</h1>
+                        </div>
 
-                    {/* Right Column - Sidebar */}
-                    <div className="hidden lg:block w-[350px] xl:w-[390px] ml-4 sticky top-16 self-start">
-                        <RightSidebar />
+                        {/* Feed */}
+                        <div className="p-4 sm:p-6 lg:p-8">
+                            <FollowingFeed />
+                        </div>
                     </div>
                 </main>
             </div>

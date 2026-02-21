@@ -20,6 +20,7 @@ export const metadata: Metadata = {
 import { Providers } from "@/components/providers/QueryProvider";
 import { FloatingActions } from "@/components/FloatingActions";
 import { KeyboardShortcuts } from "@/components/providers/KeyboardShortcuts";
+import { ResponsiveGuard } from "@/components/providers/ResponsiveGuard";
 
 import { Suspense } from "react";
 
@@ -32,12 +33,14 @@ export default function RootLayout({
     <html lang="en" className={lato.variable}>
       <body className="antialiased bg-black min-h-screen">
         <Providers>
-          <KeyboardShortcuts>
-            <Suspense fallback={<div>Loading...</div>}>
-              {children}
-            </Suspense>
-            <FloatingActions />
-          </KeyboardShortcuts>
+          <ResponsiveGuard>
+            <KeyboardShortcuts>
+              <Suspense fallback={<div>Loading...</div>}>
+                {children}
+              </Suspense>
+              <FloatingActions />
+            </KeyboardShortcuts>
+          </ResponsiveGuard>
         </Providers>
       </body>
     </html>
