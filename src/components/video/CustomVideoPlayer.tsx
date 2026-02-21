@@ -30,6 +30,7 @@ export function CustomVideoPlayer({ id, url, poster, className, autoPlay = true 
     const [seeking, setSeeking] = useState(false);
     const [showControls, setShowControls] = useState(false);
     const [isVisible, setIsVisible] = useState(false);
+    const [manuallyPaused, setManuallyPaused] = useState(false);
 
     const videoRef = useRef<HTMLVideoElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
@@ -38,15 +39,14 @@ export function CustomVideoPlayer({ id, url, poster, className, autoPlay = true 
     useEffect(() => {
         if (!videoRef.current) return;
 
-        if (playing && isVisible) {
+        if (playing && isVisible && !manuallyPaused) {
             videoRef.current.play().catch((err) => {
                 console.warn("Autoplay blocked:", err);
-                if (playing) setCurrentVideo(null);
             });
         } else {
             videoRef.current.pause();
         }
-    }, [playing, isVisible, setCurrentVideo]);
+    }, [playing, isVisible, manuallyPaused]);
 
     // Intersection Observer for Autoplay
     useEffect(() => {
@@ -55,10 +55,13 @@ export function CustomVideoPlayer({ id, url, poster, className, autoPlay = true 
 
         const observer = new IntersectionObserver(
             ([entry]) => {
-                setIsVisible(entry.isIntersecting);
-                // If becomes visible and autoPlay is on, and no other video is playing
-                if (entry.isIntersecting && autoPlay && !currentVideoId) {
+                const isNowVisible = entry.isIntersecting;
+                setIsVisible(isNowVisible);
+
+                // When a new video enters the view significantly, it becomes the current video
+                if (isNowVisible && autoPlay) {
                     setCurrentVideo(id);
+                    setManuallyPaused(false); // Reset manual pause state when scrolling to a new focus
                 }
             },
             { threshold: 0.6 }
@@ -66,13 +69,14 @@ export function CustomVideoPlayer({ id, url, poster, className, autoPlay = true 
 
         observer.observe(el);
         return () => observer.disconnect();
-    }, [autoPlay, id, currentVideoId, setCurrentVideo]);
+    }, [autoPlay, id, setCurrentVideo]);
 
     const handlePlayPause = (e?: React.MouseEvent) => {
         if (e) e.stopPropagation();
-        if (playing) {
-            setCurrentVideo(null);
+        if (playing && !manuallyPaused) {
+            setManuallyPaused(true);
         } else {
+            setManuallyPaused(false);
             setCurrentVideo(id);
         }
     };

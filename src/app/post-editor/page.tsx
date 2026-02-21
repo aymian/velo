@@ -133,6 +133,8 @@ function PostEditorContent() {
     const [price, setPrice] = useState('10');
     const [visibility, setVisibility] = useState('public');
     const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
+    const [showSuccessOverlay, setShowSuccessOverlay] = useState(false);
+    const [publishedData, setPublishedData] = useState<any>(null);
 
     // Privacy Toggles
     const [allowComments, setAllowComments] = useState(true);
@@ -167,6 +169,8 @@ function PostEditorContent() {
         const setUploadProgress = useCreateStore.getState().setUploadProgress;
 
         setUploading(true);
+        setUploadProgress(0);
+        setShowSuccessOverlay(true);
         try {
             let cloudinaryData: any = {};
 
@@ -219,9 +223,15 @@ function PostEditorContent() {
                 ...old
             ]);
 
-            addNotification({ type: "success", message: "Transmission Published" });
-            reset();
-            router.push('/profile');
+            setPublishedData({
+                id: docRef.id,
+                caption: localCaption,
+                preview: localSource,
+                resourceType: cloudinaryData.resourceType || 'text'
+            });
+
+            // Keep overlay open to show "Successfully Shared"
+            setUploading(false);
         } catch (e: any) {
             console.error(e);
             addNotification({ type: "error", message: e.message || "Failed to publish" });
@@ -503,15 +513,114 @@ function PostEditorContent() {
                 </div>
             </div>
 
-            {isUploading && (
-                <div className="fixed inset-0 z-[200] bg-[#0d0d0d]/95 flex flex-col items-center justify-center gap-5">
-                    <div className="w-10 h-10 rounded-full border border-white/10 border-t-white/50 animate-spin" />
-                    <div className="text-center">
-                        <p className="text-[15px] font-semibold text-white">Publishing…</p>
-                        <p className="text-[13px] text-white/30 mt-1">{uploadProgress}% uploaded</p>
-                    </div>
-                </div>
-            )}
+            <AnimatePresence>
+                {showSuccessOverlay && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-[1000] bg-black/95 backdrop-blur-xl flex flex-col items-center justify-center p-6"
+                    >
+                        <motion.div
+                            initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                            animate={{ scale: 1, opacity: 1, y: 0 }}
+                            className="bg-[#111] border border-white/10 p-10 rounded-[2.5rem] w-full max-w-[420px] shadow-[0_0_100px_rgba(255,45,85,0.1)] flex flex-col items-center"
+                        >
+                            {!publishedData ? (
+                                <>
+                                    {/* Progress State */}
+                                    <div className="relative w-24 h-24 mb-8">
+                                        <svg className="w-full h-full transform -rotate-90">
+                                            <circle
+                                                cx="48"
+                                                cy="48"
+                                                r="44"
+                                                stroke="currentColor"
+                                                strokeWidth="3.5"
+                                                fill="transparent"
+                                                className="text-white/5"
+                                            />
+                                            <motion.circle
+                                                cx="48"
+                                                cy="48"
+                                                r="44"
+                                                stroke="url(#gradient)"
+                                                strokeWidth="3.5"
+                                                strokeDasharray="276.46"
+                                                animate={{ strokeDashoffset: 276.46 - (276.46 * uploadProgress) / 100 }}
+                                                fill="transparent"
+                                                strokeLinecap="round"
+                                                className="transition-all duration-300"
+                                            />
+                                            <defs>
+                                                <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                                    <stop offset="0%" stopColor="#FF2D55" />
+                                                    <stop offset="100%" stopColor="#a855f7" />
+                                                </linearGradient>
+                                            </defs>
+                                        </svg>
+                                        <div className="absolute inset-0 flex items-center justify-center">
+                                            <p className="text-xl font-black text-white">{uploadProgress}%</p>
+                                        </div>
+                                    </div>
+                                    <h2 className="text-2xl font-black text-white mb-2">Publishing</h2>
+                                    <p className="text-white/40 text-sm font-medium">Syncing with Transmission Hub...</p>
+                                </>
+                            ) : (
+                                <>
+                                    {/* Final Success State */}
+                                    <motion.div
+                                        initial={{ scale: 0.5, opacity: 0 }}
+                                        animate={{ scale: 1, opacity: 1 }}
+                                        transition={{ type: "spring", damping: 12, stiffness: 200 }}
+                                        className="relative mb-8"
+                                    >
+                                        <div className="w-24 h-24 rounded-full bg-gradient-to-tr from-[#FF2D55] to-[#a855f7] flex items-center justify-center">
+                                            <CheckCircle2 className="w-12 h-12 text-white" strokeWidth={3} />
+                                        </div>
+                                        {publishedData.preview && (
+                                            <motion.div
+                                                initial={{ x: 20, opacity: 0 }}
+                                                animate={{ x: 0, opacity: 1 }}
+                                                className="absolute -bottom-2 -right-4 w-16 h-16 rounded-2xl overflow-hidden border-4 border-[#111] shadow-2xl"
+                                            >
+                                                {publishedData.resourceType === 'video' ? (
+                                                    <video src={publishedData.preview} className="w-full h-full object-cover" muted playsInline />
+                                                ) : (
+                                                    <img src={publishedData.preview} className="w-full h-full object-cover" alt="Preview" />
+                                                )}
+                                            </motion.div>
+                                        )}
+                                    </motion.div>
+
+                                    <h2 className="text-2xl font-black text-white mb-2">Post Shared!</h2>
+                                    <p className="text-white/40 text-sm font-medium text-center mb-8">
+                                        Your post is now live on Velo.
+                                    </p>
+
+                                    <div className="flex flex-col gap-3 w-full">
+                                        <button
+                                            onClick={() => {
+                                                reset();
+                                                router.push('/profile');
+                                            }}
+                                            className="w-full py-4 bg-gradient-to-r from-[#FF2D55] to-[#a855f7] rounded-2xl text-white font-bold text-sm tracking-wide shadow-[0_8px_32px_rgba(255,45,85,0.3)] active:scale-95 transition-all"
+                                        >
+                                            VIEW POST
+                                        </button>
+                                        <button
+                                            onClick={() => setShowSuccessOverlay(false)}
+                                            className="w-full py-4 text-white/30 font-bold text-sm hover:text-white transition-colors"
+                                        >
+                                            DISMISS
+                                        </button>
+                                    </div>
+                                </>
+                            )}
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 }
