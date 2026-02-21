@@ -1,8 +1,7 @@
- "use client";
+"use client";
 
 import React from "react";
 import { Post, User } from "@/lib/firebase/collections";
-import { CardDropdown } from "./CardDropdown";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Heart, MessageCircle, Send, Bookmark, MoreHorizontal } from "lucide-react";
 import Link from "next/link";
@@ -12,7 +11,8 @@ import { usePostLiked, useToggleLikePost, usePostEngagement } from "@/lib/fireba
 import { useAuthStore, useNotificationStore } from "@/lib/store";
 import { CommentModal } from "./CommentModal";
 import { cn } from "@/lib/utils";
-import { VerifiedBadge } from "../ui/VerifiedBadge";
+import { VerifiedBadge } from "@/components/ui/VerifiedBadge";
+import CustomVideoPlayer from "@/components/video/CustomVideoPlayer";
 
 dayjs.extend(relativeTime);
 
@@ -121,8 +121,8 @@ export function TweetCard({ post }: TweetCardProps) {
                             <span className="font-bold text-[13px] text-white">
                                 {creator?.username || "user"}
                             </span>
-                            <VerifiedBadge 
-                                showOnCondition={!!(creator?.verified || (creator?.followers && creator.followers >= 1))} 
+                            <VerifiedBadge
+                                showOnCondition={!!(creator?.verified || (creator?.followers && creator.followers >= 1))}
                                 size={14}
                             />
                             <span className="text-white/30 text-[12px] ml-1">· {timeAgo}</span>
@@ -140,17 +140,14 @@ export function TweetCard({ post }: TweetCardProps) {
             {/* 2. MEDIA - Reduced Height (Instagram Portrait Standard 4:5) */}
             <div className="relative w-full overflow-hidden rounded-[2rem] border border-white/5 bg-black aspect-[4/5] shadow-lg group">
                 {hasVideo && videoSrc ? (
-                    <video
-                        src={videoSrc}
+                    <CustomVideoPlayer
+                        id={post.id}
+                        url={videoSrc}
                         poster={post.cloudinaryPublicId
                             ? `https://res.cloudinary.com/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/video/upload/so_0,q_auto,f_auto/${post.cloudinaryPublicId}.jpg`
                             : undefined}
-                        className="w-full h-full object-cover"
-                        autoPlay
-                        muted
-                        playsInline
-                        loop
-                        controls
+                        className="w-full h-full"
+                        autoPlay={true}
                     />
                 ) : hasImageAsset && imageSrc ? (
                     <img

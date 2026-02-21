@@ -3,6 +3,8 @@
 import React, { useState, useRef, useEffect, useCallback, memo } from 'react';
 import { Lock, Loader2 } from 'lucide-react';
 import { usePlayerStore } from '@/lib/store';
+import CustomVideoPlayer from './video/CustomVideoPlayer';
+import { cn } from '@/lib/utils';
 
 interface VideoPostProps {
     id: string;
@@ -29,12 +31,11 @@ export const VideoPost = memo(function VideoPost({
     caption,
     tags
 }: VideoPostProps) {
-    const videoRef = useRef<HTMLVideoElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
     const [isVisible, setIsVisible] = useState(false);
-    const { currentVideoId, setCurrentVideo, muted } = usePlayerStore();
+    const { currentVideoId, setCurrentVideo } = usePlayerStore();
 
-    // Lazy load: only load video when in viewport
+    // Lazy load: only load media area when near viewport
     useEffect(() => {
         const el = containerRef.current;
         if (!el) return;
@@ -51,30 +52,14 @@ export const VideoPost = memo(function VideoPost({
         return () => observer.disconnect();
     }, []);
 
-    const isPlaying = currentVideoId === id;
-
-    useEffect(() => {
-        if (!videoRef.current) return;
-        if (isPlaying) {
-            videoRef.current.play().catch(() => { });
-        } else {
-            videoRef.current.pause();
-        }
-    }, [isPlaying]);
-
-    useEffect(() => {
-        if (!videoRef.current) return;
-        videoRef.current.muted = muted;
-    }, [muted]);
-
     const handleTogglePlay = useCallback((e: React.MouseEvent) => {
         e.stopPropagation();
-        if (isPlaying) {
+        if (currentVideoId === id) {
             setCurrentVideo(null);
         } else {
             setCurrentVideo(id);
         }
-    }, [isPlaying, id, setCurrentVideo]);
+    }, [currentVideoId, id, setCurrentVideo]);
 
     const finalUrl = publicId
         ? `https://res.cloudinary.com/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/video/upload/q_auto,f_auto/${publicId}.mp4`
@@ -101,18 +86,18 @@ export const VideoPost = memo(function VideoPost({
                 )}
 
                 {/* Video */}
-                <video
-                    ref={videoRef}
-                    key={finalUrl}
-                    src={isVisible ? finalUrl : undefined}
-                    preload={isVisible ? 'metadata' : 'none'}
-                    poster={isVisible && publicId ? `https://res.cloudinary.com/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/video/upload/so_0,w_400,q_auto,f_auto/${publicId}.jpg` : undefined}
-                    className={`relative w-full h-full object-contain z-10 ${isLocked && blurEnabled ? 'blur-3xl scale-110 opacity-30' : ''}`}
-                    loop
-                    playsInline
-                    muted
-                    controls
-                />
+                {isVisible && finalUrl && (
+                    <CustomVideoPlayer
+                        id={id}
+                        url={finalUrl}
+                        poster={publicId ? `https://res.cloudinary.com/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/video/upload/so_0,w_400,q_auto,f_auto/${publicId}.jpg` : undefined}
+                        className={cn(
+                            "relative w-full h-full object-contain z-10",
+                            isLocked && blurEnabled && "blur-3xl scale-110 opacity-30"
+                        )}
+                        autoPlay={true}
+                    />
+                )}
 
                 {/* Caption + Tags overlay at bottom */}
                 {!isLocked && (caption || (tags && tags.length > 0)) && (
