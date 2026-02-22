@@ -5,18 +5,14 @@ import {
     Home,
     Search,
     Bell,
-    Info,
-    Mail,
-    MoreHorizontal,
-    Feather,
-    Users,
-    Bookmark
+    Gem,
+    Wallet,
+    Users
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { useAuthStore, useSearchStore } from "@/lib/store";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { useSearchStore } from "@/lib/store";
 
 interface SidebarItemProps {
     href?: string;
@@ -83,8 +79,8 @@ export function XSidebar() {
                     active={false}
                 />
                 <SidebarItem href="/notifications" icon={Bell} label="Notifications" active={pathname === "/notifications"} badge="3" />
-                <SidebarItem href="/about" icon={Info} label="About" active={pathname === "/about"} />
-                <SidebarItem href="/contact" icon={Mail} label="Contact" active={pathname === "/contact"} />
+                <SidebarItem href="/premium" icon={Gem} label="Premium" active={pathname === "/premium"} />
+                <SidebarItem href="/wallet" icon={Wallet} label="Wallet" active={pathname === "/wallet"} />
             </div>
         </div>
     );

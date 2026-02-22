@@ -215,7 +215,7 @@ export function TweetCard({ post }: TweetCardProps) {
                 post={post}
             />
 
-            <PostActionsMenu 
+            <PostActionsMenu
                 isOpen={isMenuOpen}
                 onClose={() => setIsMenuOpen(false)}
                 anchorEl={menuAnchor}

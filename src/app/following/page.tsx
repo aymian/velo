@@ -35,12 +35,6 @@ export default function FollowingPage() {
                 {/* Main Content - No Right Sidebar */}
                 <main className="flex-grow sm:ml-[72px] xl:ml-[275px] min-h-screen">
                     <div className="w-full min-h-screen border-x border-white/5 bg-[#0d0d0d]">
-                        {/* Header */}
-                        <div className="sticky top-16 bg-black/80 backdrop-blur-xl z-20 px-6 py-4 border-b border-white/5">
-                            <h1 className="text-xl font-black tracking-tight">Following</h1>
-                        </div>
-
-                        {/* Feed */}
                         <div className="p-4 sm:p-6 lg:p-8">
                             <FollowingFeed />
                         </div>

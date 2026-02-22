@@ -119,14 +119,17 @@ export function Navbar() {
                 {item.name}
               </span>
 
-              {/* Active Underline */}
+              {/* Active Underline & Glow */}
               {(isActive || (item.name === "Chats" && isChatOpen)) && (
-                <motion.div
-                  layoutId="navUnderline"
-                  className="absolute bottom-0 left-3 right-3 h-0.5 bg-gradient-to-r from-[#ff4081] to-[#7c4dff] rounded-full"
-                  initial={false}
-                  transition={{ type: "spring", stiffness: 380, damping: 30 }}
-                />
+                <>
+                  <motion.div
+                    layoutId="navUnderline"
+                    className="absolute bottom-0 left-3 right-3 h-0.5 bg-gradient-to-r from-[#ff3b5c] to-[#f127a3] rounded-full z-10"
+                    initial={false}
+                    transition={{ type: "spring", stiffness: 450, damping: 35 }}
+                  />
+                  <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-4 bg-[#ff3b5c]/20 blur-xl rounded-full pointer-events-none" />
+                </>
               )}
             </div>
           );

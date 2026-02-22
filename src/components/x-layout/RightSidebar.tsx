@@ -103,7 +103,6 @@ export function RightSidebar() {
                 setSuggestedUsers(users.slice(0, 5));
 
                 // Fetch recent stories
-                // Removed orderBy to avoid index errors, sort client-side
                 const storiesCollection = collection(db, COLLECTIONS.STORIES);
                 const storiesSnap = await getDocs(query(storiesCollection, limit(40)));
                 const allStories = storiesSnap.docs.map(d => ({ id: d.id, ...d.data() })) as any[];
