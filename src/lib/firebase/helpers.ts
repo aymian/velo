@@ -242,7 +242,9 @@ export async function followUser(followerId: string, followingId: string) {
         updatedAt: serverTimestamp(),
     });
 
-    batch.update(followRef, {
+    // Increment following count for follower user
+    const followerRef = doc(db, COLLECTIONS.USERS, followerId);
+    batch.update(followerRef, {
         following: increment(1),
         updatedAt: serverTimestamp(),
     });

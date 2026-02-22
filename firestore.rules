@@ -47,6 +47,14 @@ service cloud.firestore {
         allow read: if true;
         allow write: if isSignedIn() && isOwner(userId);
       }
+
+      // Notifications Sub-collection
+      match /notifications/{notificationId} {
+        allow read: if isSignedIn() && isOwner(userId);
+        allow create: if isSignedIn();
+        allow update: if isSignedIn() && isOwner(userId);
+        allow delete: if isSignedIn() && isOwner(userId);
+      }
     }
 
     // Posts (Registry Content)
@@ -91,11 +99,10 @@ service cloud.firestore {
       allow update, delete: if isSignedIn() && resource.data.userId == request.auth.uid;
     }
 
-    // Notifications
-    match /notifications/{notificationId} {
-      allow read: if isSignedIn() && resource.data.userId == request.auth.uid;
-      allow create: if isSignedIn();
-      allow update, delete: if isSignedIn() && resource.data.userId == request.auth.uid;
+    // messageCounts (for rate limiting)
+    match /messageCounts/{countId} {
+      allow read: if isSignedIn() && (resource == null || resource.data.userId == request.auth.uid);
+      allow create, update: if isSignedIn() && request.resource.data.userId == request.auth.uid;
     }
 
     // --- Infrastructure & signaling ---
