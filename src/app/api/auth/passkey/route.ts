@@ -4,9 +4,18 @@ import { COLLECTIONS } from "@/lib/firebase/collections";
 
 export const dynamic = 'force-dynamic';
 
+// BUILD-TIME EVALUATION GUARD
+if (typeof window !== 'undefined') {
+    console.warn('⚠️ Passkey route evaluated in client context');
+}
+
 export async function POST(request: NextRequest) {
     try {
-        console.log('📝 Passkey registration request received');
+        console.log('📝 Passkey registration request: env check', {
+            hasProjectId: !!process.env.FIREBASE_PROJECT_ID,
+            hasEmail: !!process.env.FIREBASE_CLIENT_EMAIL,
+            hasKey: !!process.env.FIREBASE_PRIVATE_KEY
+        });
         const body = await request.json();
         const { credential, challenge, pin } = body;
 

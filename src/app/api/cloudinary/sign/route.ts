@@ -4,6 +4,11 @@ import { getAdminAuth, getAdminDb } from '@/lib/firebase/admin';
 
 export const dynamic = 'force-dynamic';
 
+// BUILD-TIME EVALUATION GUARD
+if (typeof window !== 'undefined') {
+    console.warn('⚠️ Cloudinary sign route evaluated in client context');
+}
+
 cloudinary.config({
     cloud_name: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME,
     api_key: process.env.NEXT_PUBLIC_CLOUDINARY_API_KEY,
