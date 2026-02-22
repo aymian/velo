@@ -119,7 +119,7 @@ export default function UserProfilePage() {
     }
 
     const displayName = (userData as any)?.displayName || (userData as any)?.username || username;
-    const isVerified = !!(userData?.verified || (userData?.followers && userData.followers >= 1));
+    const isVerified = !!(userData?.verified || (userData?.plan && userData.plan !== "free"));
 
     const router = useRouter();
 

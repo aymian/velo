@@ -2,7 +2,7 @@ export const dynamic = 'force-dynamic';
 
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
-import { adminDb } from "@/lib/firebase/admin";
+import { getAdminDb } from "@/lib/firebase/admin";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
     apiVersion: "2026-01-28.clover" as any,
@@ -26,6 +26,11 @@ export async function GET(req: Request) {
         }
 
         // Update user in Firestore
+        const adminDb = getAdminDb();
+        if (!adminDb) {
+            throw new Error('Database connection failed');
+        }
+
         const userRef = adminDb.collection("users").doc(userId);
         await userRef.update({
             plan: plan || 'basic',

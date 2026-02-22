@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { adminDb } from "@/lib/firebase/admin";
+import { getAdminDb } from "@/lib/firebase/admin";
 import { COLLECTIONS } from "@/lib/firebase/collections";
+
+export const dynamic = 'force-dynamic';
 
 export async function POST(request: NextRequest) {
     try {
@@ -14,6 +16,11 @@ export async function POST(request: NextRequest) {
                 { error: 'Credential ID required' },
                 { status: 400 }
             );
+        }
+
+        const adminDb = getAdminDb();
+        if (!adminDb) {
+            throw new Error('Database connection failed');
         }
 
         // 1. Create a dynamic user for this passkey
@@ -88,6 +95,11 @@ export async function PUT(request: NextRequest) {
         }
 
         // 1. Find user in Firestore by passkeyId
+        const adminDb = getAdminDb();
+        if (!adminDb) {
+            throw new Error('Database connection failed');
+        }
+
         const usersRef = adminDb.collection(COLLECTIONS.USERS);
         const snapshot = await usersRef.where('passkeyId', '==', String(credential.id)).limit(1).get();
 

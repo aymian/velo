@@ -47,7 +47,7 @@ export const PLAN_FEATURES: Record<PlanType, PlanFeatures> = {
         canTipCreators: true,
         platformFee: 0.15,
         canMonetize: false,
-        verifiedBadge: false,
+        verifiedBadge: true,
         discoveryBoost: 'small',
     },
     pro: {

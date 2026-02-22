@@ -1,6 +1,8 @@
 import { v2 as cloudinary } from 'cloudinary';
 import { NextResponse } from 'next/server';
-import { adminAuth, adminDb } from '@/lib/firebase/admin';
+import { getAdminAuth, getAdminDb } from '@/lib/firebase/admin';
+
+export const dynamic = 'force-dynamic';
 
 cloudinary.config({
     cloud_name: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME,
@@ -10,6 +12,13 @@ cloudinary.config({
 
 export async function POST(req: Request) {
     try {
+        const adminAuth = getAdminAuth();
+        const adminDb = getAdminDb();
+
+        if (!adminAuth || !adminDb) {
+            throw new Error('Firebase Admin not initialized');
+        }
+
         // 1. Verify User
         const authHeader = req.headers.get('Authorization');
         if (!authHeader?.startsWith('Bearer ')) {

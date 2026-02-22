@@ -101,7 +101,7 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
 
     const handleSelectCreator = useCallback((username: string) => {
         addSearch(`@${username}`);
-        router.push(`/@${username}`);
+        router.push(`/profile/${username}`);
         onClose();
     }, [router, onClose, addSearch]);
 
@@ -277,7 +277,7 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
                                                                             {u.username ? `@${u.username}` : u.displayName || "Creator"}
                                                                         </span>
                                                                         <VerifiedBadge
-                                                                            showOnCondition={!!(u.verified || (u.followers && u.followers >= 1))}
+                                                                            showOnCondition={!!(u.verified || (u.plan && u.plan !== "free"))}
                                                                             size={12}
                                                                         />
                                                                     </div>
@@ -322,7 +322,7 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
                                                                         <div className="flex items-center gap-1.5">
                                                                             <span className="text-[13px] font-semibold text-white/80 truncate group-hover:text-white transition-colors">@{u.username}</span>
                                                                             <VerifiedBadge
-                                                                                showOnCondition={!!(u.verified || (u.followers && u.followers >= 1))}
+                                                                                showOnCondition={!!(u.verified || (u.plan && u.plan !== "free"))}
                                                                                 size={14}
                                                                             />
                                                                         </div>

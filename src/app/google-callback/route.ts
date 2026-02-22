@@ -1,10 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
-
-import { adminDb } from "@/lib/firebase/admin";
+import { getAdminDb } from "@/lib/firebase/admin";
 import { COLLECTIONS } from "@/lib/firebase/collections";
+
+export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
     try {
+        const adminDb = getAdminDb();
+        if (!adminDb) {
+            console.error('❌ Database not available');
+            return NextResponse.redirect(new URL('/login?error=db_unavailable', request.url));
+        }
         const searchParams = request.nextUrl.searchParams;
         const code = searchParams.get('code');
         const state = searchParams.get('state') || '/';

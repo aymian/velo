@@ -99,7 +99,7 @@ export function CommentModal({ isOpen, onClose, post, onCommentAdded }: CommentM
                                         {post.creator?.username || "user"}
                                     </span>
                                     <VerifiedBadge
-                                        showOnCondition={!!(post.creator?.verified || (post.creator?.followers && post.creator.followers >= 1))}
+                                        showOnCondition={!!(post.creator?.verified || (post.creator?.plan && post.creator.plan !== "free"))}
                                         size={14}
                                     />
                                     <span className="text-white/30 text-[12px] ml-1">· {dayjs(post.createdAt?.toDate?.() || post.createdAt).fromNow(true)}</span>

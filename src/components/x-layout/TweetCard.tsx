@@ -86,7 +86,7 @@ export function TweetCard({ post }: TweetCardProps) {
             {/* 1. INSTAGRAM STYLE HEADER */}
             <div className="flex items-center justify-between px-2 py-3">
                 <Link
-                    href={`/${creator?.username || "user"}`}
+                    href={`/profile/${creator?.username || "user"}`}
                     className="flex items-center gap-3 active:opacity-60 transition-opacity"
                 >
                     <Avatar className="w-8 h-8 ring-1 ring-white/10">
@@ -101,7 +101,7 @@ export function TweetCard({ post }: TweetCardProps) {
                                 {creator?.username || "user"}
                             </span>
                             <VerifiedBadge
-                                showOnCondition={!!(creator?.verified || (creator?.followers && creator.followers >= 1))}
+                                showOnCondition={!!(creator?.verified || (creator?.plan && creator.plan !== "free"))}
                                 size={14}
                             />
                             <span className="text-white/30 text-[12px] ml-1">· {timeAgo}</span>
