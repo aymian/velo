@@ -24,8 +24,24 @@ export default function PaymentPage() {
   const selectedPlan = plans[plan as keyof typeof plans];
 
   const handleCheckout = async () => {
-    // Later connect Stripe / Firebase function here
-    console.log("Proceeding with:", plan);
+    try {
+      const billing = searchParams.get("billing") || "monthly";
+      const res = await fetch("/api/create-checkout-session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ plan, billing, userId: user?.uid }),
+      });
+
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        alert("Payment Error: " + (data.error || "Unknown error"));
+      }
+    } catch (err) {
+      console.error("Checkout Error:", err);
+      alert("Something went wrong with the payment process.");
+    }
   };
 
   return (
@@ -115,7 +131,7 @@ export default function PaymentPage() {
                   boxShadow: "0 0 30px rgba(168, 85, 247, 0.35)",
                 }}
               >
-                Upgrade to {plan}
+                Start Your 2-Month Free Trial
               </button>
 
               <div className="flex items-center gap-2 mt-4 text-xs text-white/50">

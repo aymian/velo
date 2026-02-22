@@ -60,6 +60,7 @@
     "react-mentions": "^4.4.10",
     "react-phone-number-input": "^3.4.14",
     "react-player": "^3.4.0",
+    "stripe": "^20.3.1",
     "supabase": "^2.76.9",
     "tailwind-merge": "^3.4.0",
     "zod": "^4.3.6",
