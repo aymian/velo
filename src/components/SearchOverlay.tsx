@@ -5,7 +5,6 @@ import {
     Search,
     X,
     ArrowUpRight,
-    Play,
     Hash,
     User,
     TrendingUp,
@@ -17,7 +16,7 @@ import * as ScrollArea from "@radix-ui/react-scroll-area";
 import * as Separator from "@radix-ui/react-separator";
 import * as Tooltip from "@radix-ui/react-tooltip";
 import { db } from "@/lib/firebase/config";
-import { collection, query, where, getDocs, limit, orderBy, startAt, endAt } from "firebase/firestore";
+import { collection, query, getDocs, limit, orderBy, startAt, endAt } from "firebase/firestore";
 import { COLLECTIONS } from "@/lib/firebase/collections";
 import { useRouter } from "next/navigation";
 import { useSearchStore } from "@/lib/store";
@@ -40,7 +39,7 @@ const SUGGESTED_HASHTAGS = [
 export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
     const [searchTerm, setSearchTerm] = useState("");
     const [isLoading, setIsLoading] = useState(false);
-    const [results, setResults] = useState<{ creators: any[]; posts: any[] }>({ creators: [], posts: [] });
+    const [results, setResults] = useState<{ creators: any[] }>({ creators: [] });
     const [topCreators, setTopCreators] = useState<any[]>([]);
     const inputRef = useRef<HTMLInputElement>(null);
     const router = useRouter();
@@ -67,14 +66,14 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
     useEffect(() => {
         if (!isOpen) {
             setSearchTerm("");
-            setResults({ creators: [], posts: [] });
+            setResults({ creators: [] });
         }
     }, [isOpen]);
 
     useEffect(() => {
         const performSearch = async () => {
             if (!searchTerm.trim()) {
-                setResults({ creators: [], posts: [] });
+                setResults({ creators: [] });
                 return;
             }
             setIsLoading(true);
@@ -85,20 +84,11 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
                     orderBy("username"),
                     startAt(term),
                     endAt(term + "\uf8ff"),
-                    limit(5)
+                    limit(8)
                 );
-                const qPosts = query(
-                    collection(db, COLLECTIONS.POSTS),
-                    where("status", "==", "ready"),
-                    limit(10)
-                );
-                const [uSnap, pSnap] = await Promise.all([getDocs(qCreators), getDocs(qPosts)]);
+                const uSnap = await getDocs(qCreators);
                 const creators = uSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-                const posts = pSnap.docs
-                    .map(d => ({ id: d.id, ...d.data() }))
-                    .filter((p: any) => p.caption?.toLowerCase().includes(term))
-                    .slice(0, 4);
-                setResults({ creators, posts });
+                setResults({ creators });
             } catch (error) {
                 console.error("Search error:", error);
             } finally {
@@ -129,8 +119,7 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
         }
     }, [onClose, searchTerm, addSearch]);
 
-    const totalResults = results.creators.length + results.posts.length;
-    const hasResults = totalResults > 0;
+    const hasResults = results.creators.length > 0;
 
     return (
         <Tooltip.Provider delayDuration={300}>
@@ -340,39 +329,6 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
                                                                         <span className="text-[10px] font-medium text-white/15">View profile</span>
                                                                     </div>
                                                                     <ArrowUpRight className="w-4 h-4 text-white/10 group-hover:text-[#ff3b5c]/60 transition-all" />
-                                                                </div>
-                                                            ))}
-                                                        </div>
-                                                    </div>
-                                                )}
-
-                                                {results.creators.length > 0 && results.posts.length > 0 && (
-                                                    <Separator.Root className="h-px bg-white/[0.03] mx-3 my-2" />
-                                                )}
-
-                                                {results.posts.length > 0 && (
-                                                    <div>
-                                                        <div className="flex items-center gap-2 px-3 py-2">
-                                                            <Play className="w-3 h-3 text-[#a855f7]/30" />
-                                                            <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-white/20">Posts</span>
-                                                            <span className="text-[9px] font-bold text-[#a855f7]/30 bg-[#a855f7]/[0.06] px-1.5 py-0.5 rounded-full">{results.posts.length}</span>
-                                                        </div>
-                                                        <div className="space-y-0.5 px-1">
-                                                            {results.posts.map((p: any) => (
-                                                                <div
-                                                                    key={p.id}
-                                                                    onClick={() => handleSelectPost(p.id, p.caption)}
-                                                                    className="flex items-center gap-3.5 px-3 py-2.5 hover:bg-gradient-to-r hover:from-[#a855f7]/[0.04] hover:to-transparent rounded-2xl transition-all cursor-pointer group"
-                                                                >
-                                                                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#a855f7]/15 to-[#ff3b5c]/10 border border-[#a855f7]/10 flex items-center justify-center shrink-0">
-                                                                        <Play className="w-4 h-4 text-[#a855f7]/50 fill-[#a855f7]/20" />
-                                                                    </div>
-                                                                    <div className="flex-1 min-w-0">
-                                                                        <p className="text-[13px] font-medium text-white/60 group-hover:text-white truncate transition-colors">
-                                                                            {p.caption || "Untitled post"}
-                                                                        </p>
-                                                                        <span className="text-[10px] font-medium text-white/15">#{p.id.slice(0, 6)}</span>
-                                                                    </div>
                                                                 </div>
                                                             ))}
                                                         </div>

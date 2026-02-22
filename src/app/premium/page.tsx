@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Check, ArrowRight, Star, Zap, Crown } from "lucide-react";
+import { Check, ArrowRight, Star, Zap, Crown, Shield } from "lucide-react";
 import { XSidebar } from "@/components/x-layout/XSidebar";
 import { Navbar } from "@/components/Navbar";
 import { useAuthStore } from "@/lib/store";
@@ -11,178 +11,445 @@ import { cn } from "@/lib/utils";
 
 const plans = [
     {
-        name: "Basic",
-        monthlyPrice: 9,
-        yearlyPrice: 7,
-        icon: Star,
-        description: "Small starting point",
-        features: [
-            "exclusive profile badge",
-            "priority comments",
-            "ad-free browsing"
+        name: "Free",
+        price: "$0",
+        period: "/month",
+        icon: Shield,
+        description: "Get started for free",
+        memberFeatures: [
+            "Browse public profiles",
+            "Like & follow creators",
+            "Limited preview content",
+            "Basic search filters",
+            "3 messages per day",
+            "Ads shown",
         ],
-        buttonText: "Subscribe",
-        accent: "text-white/20"
+        creatorFeatures: [
+            "Create profile",
+            "Upload limited posts (10/month)",
+            "Basic analytics",
+            "Receive likes",
+            "Limited chat replies",
+            "20% platform fee",
+        ],
     },
     {
-        name: "Premium",
-        monthlyPrice: 19,
-        yearlyPrice: 15,
-        isActive: true,
-        icon: Zap,
-        description: "Status and power",
-        features: [
-            "unlock content access",
-            "direct creator messaging",
-            "500 monthly gems",
-            "verified status"
+        name: "Basic",
+        price: "$9",
+        period: "/month",
+        icon: Star,
+        description: "Perfect for getting started",
+        memberFeatures: [
+            "Unlimited profile browsing",
+            "Unlimited likes & follows",
+            "20 messages per day",
+            "HD content viewing",
+            "No ads",
+            "Basic creator recommendations",
+            "Can tip creators",
         ],
-        buttonText: "Upgrade Now",
-        accent: "text-[#d147a3]"
+        creatorFeatures: [
+            "Unlimited uploads",
+            "HD content",
+            "Priority in search ranking",
+            "Basic earnings dashboard",
+            "Withdraw earnings",
+            "15% platform fee",
+        ],
+    },
+    {
+        name: "Pro",
+        price: "$29",
+        period: "/month",
+        icon: Zap,
+        popular: true,
+        description: "Most popular choice",
+        memberFeatures: [
+            "Unlimited messaging",
+            "Send images & files in chat",
+            "View exclusive locked content",
+            "Advanced search filters",
+            "Early access to new creators",
+            "\"Top Supporter\" badge",
+            "10% discount on tips",
+        ],
+        creatorFeatures: [
+            "Verified badge eligibility",
+            "Boosted discovery ranking",
+            "Monetize locked posts",
+            "Set subscription pricing",
+            "Private premium chat rooms",
+            "Advanced analytics",
+            "10% platform fee",
+            "Faster withdrawals",
+        ],
     },
     {
         name: "Elite",
-        monthlyPrice: 49,
-        yearlyPrice: 39,
+        price: "$79",
+        period: "/month",
         icon: Crown,
-        description: "Total exclusivity",
-        features: [
-            "private fan circles",
-            "custom profile theme",
-            "24/7 dedicated support",
-            "early feature access"
+        description: "For ultimate experience",
+        memberFeatures: [
+            "Priority inbox placement",
+            "Exclusive VIP-only creators",
+            "Unlimited file sharing",
+            "Private request submissions",
+            "VIP badge",
+            "Profile highlighted in chats",
+            "Dedicated support",
+            "20% tip discount",
         ],
-        buttonText: "Join Elite",
-        accent: "text-white/20"
-    }
+        creatorFeatures: [
+            "Maximum algorithm boost",
+            "Featured on homepage",
+            "VIP creator badge",
+            "Custom subscription tiers",
+            "AI-powered growth insights",
+            "5% platform fee",
+            "Dedicated account manager",
+            "Early payout access",
+        ],
+    },
 ];
 
 export default function PremiumPage() {
-    const { isAuthenticated } = useAuthStore();
-    const [billingCycle, setBillingCycle] = useState<"monthly" | "yearly">("monthly");
+    const router = useRouter();
+    const { user } = useAuthStore();
+    const [viewMode, setViewMode] = useState<"member" | "creator">("member");
+
+    const handleUpgrade = (planName: string, price: string) => {
+        if (price === "$0") {
+            router.push("/");
+        } else if (!user) {
+            router.push("/login");
+        } else {
+            router.push(`/payment?plan=${planName.toLowerCase()}`);
+        }
+    };
 
     return (
-        <div className="min-h-screen bg-[#050505] text-[#F5F5F7] font-sans selection:bg-[#d147a3]/30">
+        <div className="min-h-screen text-white">
             <Navbar />
 
             <div className="max-w-[1300px] mx-auto flex pt-16">
-                <header className="fixed h-[calc(100vh-64px)] w-[72px] xl:w-[275px] border-r border-white/5 hidden sm:block">
+                <header className="fixed h-[calc(100vh-64px)] w-[72px] xl:w-[275px] border-r border-white/10 hidden sm:block">
                     <XSidebar />
                 </header>
 
-                <main className="flex-grow sm:ml-[72px] xl:ml-[275px] min-h-screen px-6 lg:px-16 py-24">
+                <main className="flex-grow sm:ml-[72px] xl:ml-[275px] px-6 py-12">
                     <div className="max-w-5xl mx-auto">
 
-                        {/* Header Section - Ample Spacing */}
-                        <div className="text-center mb-24 space-y-6">
-                            <motion.div
-                                initial={{ opacity: 0, scale: 0.9 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                className="inline-block px-4 py-1 rounded-full bg-white/[0.03] border border-white/5 text-[10px] uppercase tracking-[0.3em] text-[#d147a3] font-bold"
-                            >
-                                Memberships
-                            </motion.div>
-                            <motion.h1
-                                initial={{ opacity: 0, y: 10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                className="text-5xl md:text-6xl font-black tracking-tight"
-                            >
-                                Unlock your status<span className="text-[#d147a3]">.</span>
-                            </motion.h1>
+                        <motion.div
+                            initial={{ opacity: 0, y: 40 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.6 }}
+                            className="text-center mb-14"
+                        >
+                            <h1 className="text-4xl font-bold mb-4">
+                                Upgrade to <span className="text-pink-500">Premium</span>
+                            </h1>
+                            <p className="text-zinc-400 text-lg mb-8">
+                                Unlock exclusive features and enjoy the full experience.
+                            </p>
 
-                            {/* Refined Billing Toggle */}
-                            <div className="flex bg-[#111] p-1.5 rounded-[2rem] border border-white/5 w-fit mx-auto mt-12">
+                            {/* Member / Creator Toggle */}
+                            <div className="inline-flex bg-white/5 p-1 rounded-full border border-white/10">
                                 <button
-                                    onClick={() => setBillingCycle("monthly")}
+                                    onClick={() => setViewMode("member")}
                                     className={cn(
-                                        "px-10 py-3 rounded-[1.8rem] text-[11px] uppercase tracking-widest font-black transition-all duration-300",
-                                        billingCycle === "monthly" ? "bg-white text-black shadow-xl" : "text-white/20 hover:text-white/40"
+                                        "px-6 py-2.5 rounded-full text-sm font-semibold transition-all",
+                                        viewMode === "member"
+                                            ? "bg-pink-500 text-black shadow-lg"
+                                            : "text-zinc-400 hover:text-white"
                                     )}
                                 >
-                                    Monthly
+                                    👨 For Members
                                 </button>
                                 <button
-                                    onClick={() => setBillingCycle("yearly")}
+                                    onClick={() => setViewMode("creator")}
                                     className={cn(
-                                        "px-10 py-3 rounded-[1.8rem] text-[11px] uppercase tracking-widest font-black transition-all duration-300",
-                                        billingCycle === "yearly" ? "bg-white text-black shadow-xl" : "text-white/20 hover:text-white/40"
+                                        "px-6 py-2.5 rounded-full text-sm font-semibold transition-all",
+                                        viewMode === "creator"
+                                            ? "bg-pink-500 text-black shadow-lg"
+                                            : "text-zinc-400 hover:text-white"
                                     )}
                                 >
-                                    Yearly
+                                    👩 For Creators
                                 </button>
                             </div>
-                        </div>
+                        </motion.div>
 
-                        {/* Pricing Cards Grid - Rounded & Spaced */}
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                            {plans.map((plan, idx) => {
-                                const price = billingCycle === "monthly" ? plan.monthlyPrice : plan.yearlyPrice;
+                        {/* First Row: Free, Basic, Pro */}
+                        <div className="grid md:grid-cols-3 gap-8 mb-8">
+                            {plans.slice(0, 3).map((plan, index) => {
+                                const Icon = plan.icon;
 
                                 return (
                                     <motion.div
                                         key={plan.name}
-                                        initial={{ opacity: 0, y: 30 }}
+                                        initial={{ opacity: 0, y: 40 }}
                                         animate={{ opacity: 1, y: 0 }}
-                                        transition={{ delay: idx * 0.1, duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+                                        transition={{ delay: index * 0.15 }}
                                         className={cn(
-                                            "flex flex-col p-10 rounded-[3rem] bg-[#0c0c0c] border transition-all duration-500 relative group overflow-hidden",
-                                            plan.isActive
-                                                ? "border-[#d147a3]/30 shadow-[0_40px_100px_rgba(0,0,0,0.8)] scale-105 z-10"
-                                                : "border-white/[0.03] hover:border-white/10 hover:bg-[#111]"
+                                            "relative rounded-3xl p-8 border backdrop-blur-xl bg-white/5 shadow-xl transition-all duration-300 hover:scale-105",
+                                            plan.popular
+                                                ? "border-pink-500 shadow-pink-500/20"
+                                                : "border-zinc-800"
                                         )}
                                     >
-                                        {/* Subtle Highlight Reflection */}
-                                        <div className="absolute top-0 left-0 w-full h-[200px] bg-gradient-to-b from-white/[0.02] to-transparent pointer-events-none" />
+                                        {plan.popular && (
+                                            <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-pink-500 text-black text-sm px-4 py-1 rounded-full font-semibold">
+                                                Most Popular
+                                            </div>
+                                        )}
 
-                                        {/* Header Info */}
-                                        <div className="mb-12 relative z-10">
-                                            <div className={cn("mb-6 transition-transform group-hover:scale-110 duration-500", plan.accent)}>
-                                                <plan.icon size={28} strokeWidth={1} />
+                                        <div className="flex items-center justify-center mb-6">
+                                            <div className="p-4 rounded-full bg-pink-500/10">
+                                                <Icon className="w-8 h-8 text-pink-500" />
                                             </div>
-                                            <h3 className="text-sm uppercase tracking-[0.3em] text-white/40 font-black mb-2">{plan.name}</h3>
-                                            <div className="flex items-baseline gap-1">
-                                                <span className="text-5xl font-black tracking-tighter text-white tabular-nums">${price}</span>
-                                                <span className="text-[11px] text-white/10 font-black uppercase tracking-widest">/ mo</span>
-                                            </div>
-                                            <p className="text-[13px] text-white/30 mt-2 font-medium tracking-tight italic">{plan.description}</p>
                                         </div>
 
-                                        {/* Feature Set */}
-                                        <div className="flex-grow space-y-5 mb-12 relative z-10">
-                                            {plan.features.map((feature, fIdx) => (
-                                                <div key={fIdx} className="flex items-center gap-4 group/item">
-                                                    <div className="w-1.5 h-1.5 rounded-full bg-white/5 group-hover/item:bg-[#d147a3] transition-colors duration-300" />
-                                                    <span className="text-[14px] text-white/60 font-medium tracking-tight group-hover/item:text-white transition-colors duration-300">
-                                                        {feature}
-                                                    </span>
-                                                </div>
+                                        <h3 className="text-2xl font-bold text-center mb-2">
+                                            {plan.name}
+                                        </h3>
+                                        <p className="text-zinc-400 text-center mb-6">
+                                            {plan.description}
+                                        </p>
+
+                                        <div className="text-center mb-8">
+                                            <span className="text-4xl font-bold">
+                                                {plan.price}
+                                            </span>
+                                            <span className="text-zinc-400">
+                                                {plan.period}
+                                            </span>
+                                        </div>
+
+                                        <ul className="space-y-4 mb-8">
+                                            {(viewMode === "member" ? plan.memberFeatures : plan.creatorFeatures).map((feature) => (
+                                                <li
+                                                    key={feature}
+                                                    className="flex items-center gap-3 text-sm text-zinc-300"
+                                                >
+                                                    <Check className="w-4 h-4 text-pink-500" />
+                                                    {feature}
+                                                </li>
                                             ))}
-                                        </div>
+                                        </ul>
 
-                                        {/* The "Sexy" Button */}
-                                        <button className={cn(
-                                            "w-full py-5 rounded-[2rem] text-[11px] font-black uppercase tracking-[0.3em] transition-all active:scale-[0.98] border flex items-center justify-center gap-2 group/btn relative overflow-hidden",
-                                            plan.isActive
-                                                ? "bg-white text-black border-white shadow-[0_20px_40px_rgba(255,255,255,0.05)]"
-                                                : "text-white/40 border-white/5 hover:text-white hover:border-white/20 hover:bg-white/5"
-                                        )}>
-                                            <span className="relative z-10">{plan.buttonText}</span>
-                                            <ArrowRight size={16} className="relative z-10 opacity-40 group-hover/btn:translate-x-1 group-hover/btn:opacity-100 transition-all" />
+                                        <button
+                                            onClick={() => handleUpgrade(plan.name, plan.price)}
+                                            className={cn(
+                                                "w-full flex items-center justify-center gap-2 py-3 rounded-xl font-semibold transition-all",
+                                                plan.popular
+                                                    ? "bg-pink-500 text-black hover:bg-pink-400"
+                                                    : plan.price === "$0"
+                                                        ? "bg-white/5 border border-white/10 text-white/60 hover:bg-white/10 hover:text-white"
+                                                        : "bg-zinc-800 hover:bg-zinc-700"
+                                            )}
+                                        >
+                                            {plan.price === "$0" ? "Continue Free" : "Get Started"}
+                                            <ArrowRight className="w-4 h-4" />
                                         </button>
                                     </motion.div>
                                 );
                             })}
                         </div>
 
-                        {/* Ultra-Refined Footer Info */}
-                        <div className="mt-32 flex flex-wrap justify-between items-center gap-8 border-t border-white/5 pt-12 group cursor-default">
-                            {["Global Security", "Instant Credits", "VIP Priority", "No Contract"].map((text, i) => (
-                                <div key={i} className="flex items-center gap-4 transition-all duration-700 opacity-20 group-hover:opacity-60">
-                                    <div className="w-[4px] h-[4px] bg-[#d147a3] rounded-full" />
-                                    <span className="text-[10px] font-black uppercase tracking-[0.4em] text-white">{text}</span>
-                                </div>
-                            ))}
+                        {/* Second Row: Elite (centered) */}
+                        <div className="grid md:grid-cols-3 gap-8">
+                            <div className="md:col-start-2">
+                                {(() => {
+                                    const plan = plans[3];
+                                    const Icon = plan.icon;
+                                    return (
+                                        <motion.div
+                                            initial={{ opacity: 0, y: 40 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            transition={{ delay: 0.45 }}
+                                            className="relative rounded-3xl p-8 border backdrop-blur-xl bg-white/5 shadow-xl transition-all duration-300 hover:scale-105 border-zinc-800"
+                                        >
+                                            <div className="flex items-center justify-center mb-6">
+                                                <div className="p-4 rounded-full bg-pink-500/10">
+                                                    <Icon className="w-8 h-8 text-pink-500" />
+                                                </div>
+                                            </div>
+
+                                            <h3 className="text-2xl font-bold text-center mb-2">
+                                                {plan.name}
+                                            </h3>
+                                            <p className="text-zinc-400 text-center mb-6">
+                                                {plan.description}
+                                            </p>
+
+                                            <div className="text-center mb-8">
+                                                <span className="text-4xl font-bold">{plan.price}</span>
+                                                <span className="text-zinc-400">{plan.period}</span>
+                                            </div>
+
+                                            <ul className="space-y-4 mb-8">
+                                                {(viewMode === "member" ? plan.memberFeatures : plan.creatorFeatures).map((feature) => (
+                                                    <li key={feature} className="flex items-center gap-3 text-sm text-zinc-300">
+                                                        <Check className="w-4 h-4 text-pink-500" />
+                                                        {feature}
+                                                    </li>
+                                                ))}
+                                            </ul>
+
+                                            <button
+                                                onClick={() => handleUpgrade(plan.name, plan.price)}
+                                                className="w-full flex items-center justify-center gap-2 py-3 rounded-xl font-semibold transition-all bg-zinc-800 hover:bg-zinc-700"
+                                            >
+                                                Get Started
+                                                <ArrowRight className="w-4 h-4" />
+                                            </button>
+                                        </motion.div>
+                                    );
+                                })()}
+                            </div>
                         </div>
+
+                        {/* ── Feature Comparison Table ── */}
+                        <motion.div
+                            initial={{ opacity: 0, y: 30 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.5, duration: 0.5 }}
+                            className="mt-20"
+                        >
+                            <h2 className="text-2xl font-bold text-center mb-2">Compare Plans</h2>
+                            <p className="text-white/25 text-sm text-center mb-10">See what&apos;s included in each tier</p>
+
+                            <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] overflow-hidden">
+                                {/* Table Header */}
+                                <div className="grid grid-cols-5 border-b border-white/[0.06]">
+                                    <div className="px-5 py-4 text-[13px] font-bold text-white/40">Enhanced Experience</div>
+                                    <div className="px-4 py-4 text-[13px] font-bold text-emerald-400 text-center">Free</div>
+                                    <div className="px-4 py-4 text-[13px] font-bold text-blue-400 text-center">Basic</div>
+                                    <div className="px-4 py-4 text-[13px] font-bold text-pink-400 text-center">Pro</div>
+                                    <div className="px-4 py-4 text-[13px] font-bold text-purple-400 text-center">Elite</div>
+                                </div>
+
+                                {[
+                                    { feature: "Ads", values: ["Ads shown", "No ads", "No ads", "No ads"] },
+                                    { feature: "Reply boost", values: ["—", "Smallest", "Larger", "Largest"] },
+                                    { feature: "Profile badge", values: ["x", "x", "check", "check"] },
+                                    { feature: "Edit posts", values: ["x", "check", "check", "check"] },
+                                    { feature: "Longer posts", values: ["x", "check", "check", "check"] },
+                                    { feature: "HD content", values: ["x", "check", "check", "check"] },
+                                    { feature: "Download content", values: ["x", "x", "check", "check"] },
+                                ].map((row, i) => (
+                                    <div key={row.feature} className={cn("grid grid-cols-5", i % 2 === 0 ? "bg-white/[0.01]" : "")}>
+                                        <div className="px-5 py-3.5 text-[13px] text-white/50 font-medium">{row.feature}</div>
+                                        {row.values.map((v, j) => (
+                                            <div key={j} className="px-4 py-3.5 flex items-center justify-center">
+                                                {v === "check" ? (
+                                                    <Check className="w-4 h-4 text-emerald-400" />
+                                                ) : v === "x" ? (
+                                                    <span className="text-white/15 text-sm">✕</span>
+                                                ) : (
+                                                    <span className="text-[12px] text-white/40 text-center font-medium">{v}</span>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                ))}
+
+                                {/* Section: Messaging */}
+                                <div className="grid grid-cols-5 border-t border-white/[0.06]">
+                                    <div className="px-5 py-4 text-[13px] font-bold text-white/40">Messaging</div>
+                                    <div className="px-4 py-4" /><div className="px-4 py-4" /><div className="px-4 py-4" /><div className="px-4 py-4" />
+                                </div>
+
+                                {[
+                                    { feature: "Daily messages", values: ["3/day", "20/day", "Unlimited", "Unlimited"] },
+                                    { feature: "Send images in chat", values: ["x", "x", "check", "check"] },
+                                    { feature: "Send files in chat", values: ["x", "x", "check", "check"] },
+                                    { feature: "Priority inbox", values: ["x", "x", "x", "check"] },
+                                    { feature: "Private requests", values: ["x", "x", "x", "check"] },
+                                ].map((row, i) => (
+                                    <div key={row.feature} className={cn("grid grid-cols-5", i % 2 === 0 ? "bg-white/[0.01]" : "")}>
+                                        <div className="px-5 py-3.5 text-[13px] text-white/50 font-medium">{row.feature}</div>
+                                        {row.values.map((v, j) => (
+                                            <div key={j} className="px-4 py-3.5 flex items-center justify-center">
+                                                {v === "check" ? (
+                                                    <Check className="w-4 h-4 text-emerald-400" />
+                                                ) : v === "x" ? (
+                                                    <span className="text-white/15 text-sm">✕</span>
+                                                ) : (
+                                                    <span className="text-[12px] text-white/40 text-center font-medium">{v}</span>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                ))}
+
+                                {/* Section: Creator Tools */}
+                                <div className="grid grid-cols-5 border-t border-white/[0.06]">
+                                    <div className="px-5 py-4 text-[13px] font-bold text-white/40">Creator Tools</div>
+                                    <div className="px-4 py-4" /><div className="px-4 py-4" /><div className="px-4 py-4" /><div className="px-4 py-4" />
+                                </div>
+
+                                {[
+                                    { feature: "Upload limit", values: ["10/month", "Unlimited", "Unlimited", "Unlimited"] },
+                                    { feature: "Verified badge", values: ["x", "x", "check", "check"] },
+                                    { feature: "Discovery boost", values: ["x", "Small", "Large", "Maximum"] },
+                                    { feature: "Monetize locked posts", values: ["x", "x", "check", "check"] },
+                                    { feature: "Subscription pricing", values: ["x", "x", "check", "check"] },
+                                    { feature: "Premium chat rooms", values: ["x", "x", "check", "check"] },
+                                    { feature: "Custom sub tiers", values: ["x", "x", "x", "check"] },
+                                    { feature: "Featured on homepage", values: ["x", "x", "x", "check"] },
+                                    { feature: "AI growth insights", values: ["x", "x", "x", "check"] },
+                                ].map((row, i) => (
+                                    <div key={row.feature} className={cn("grid grid-cols-5", i % 2 === 0 ? "bg-white/[0.01]" : "")}>
+                                        <div className="px-5 py-3.5 text-[13px] text-white/50 font-medium">{row.feature}</div>
+                                        {row.values.map((v, j) => (
+                                            <div key={j} className="px-4 py-3.5 flex items-center justify-center">
+                                                {v === "check" ? (
+                                                    <Check className="w-4 h-4 text-emerald-400" />
+                                                ) : v === "x" ? (
+                                                    <span className="text-white/15 text-sm">✕</span>
+                                                ) : (
+                                                    <span className="text-[12px] text-white/40 text-center font-medium">{v}</span>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                ))}
+
+                                {/* Section: Monetization */}
+                                <div className="grid grid-cols-5 border-t border-white/[0.06]">
+                                    <div className="px-5 py-4 text-[13px] font-bold text-white/40">Monetization</div>
+                                    <div className="px-4 py-4" /><div className="px-4 py-4" /><div className="px-4 py-4" /><div className="px-4 py-4" />
+                                </div>
+
+                                {[
+                                    { feature: "Platform fee", values: ["20%", "15%", "10%", "5%"] },
+                                    { feature: "Tip creators", values: ["x", "check", "check", "check"] },
+                                    { feature: "Tip discount", values: ["—", "—", "10% off", "20% off"] },
+                                    { feature: "Withdraw earnings", values: ["x", "check", "check", "check"] },
+                                    { feature: "Fast withdrawals", values: ["x", "x", "check", "check"] },
+                                    { feature: "Early payout access", values: ["x", "x", "x", "check"] },
+                                    { feature: "Account manager", values: ["x", "x", "x", "check"] },
+                                ].map((row, i) => (
+                                    <div key={row.feature} className={cn("grid grid-cols-5", i % 2 === 0 ? "bg-white/[0.01]" : "")}>
+                                        <div className="px-5 py-3.5 text-[13px] text-white/50 font-medium">{row.feature}</div>
+                                        {row.values.map((v, j) => (
+                                            <div key={j} className="px-4 py-3.5 flex items-center justify-center">
+                                                {v === "check" ? (
+                                                    <Check className="w-4 h-4 text-emerald-400" />
+                                                ) : v === "x" ? (
+                                                    <span className="text-white/15 text-sm">✕</span>
+                                                ) : (
+                                                    <span className="text-[12px] text-white/40 text-center font-medium">{v}</span>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                ))}
+                            </div>
+                        </motion.div>
+
                     </div>
                 </main>
             </div>
