@@ -1,25 +1,12 @@
-import { v2 as cloudinary } from 'cloudinary';
+import { getCloudinaryServer } from '@/lib/cloudinary-server';
 import { NextResponse } from 'next/server';
 import { getAdminAuth, getAdminDb } from '@/lib/firebase/admin';
 
 export const dynamic = 'force-dynamic';
 
-// BUILD-TIME EVALUATION GUARD
-if (typeof window !== 'undefined') {
-    console.warn('⚠️ Cloudinary sign route evaluated in client context');
-}
-
-const configureCloudinary = () => {
-    cloudinary.config({
-        cloud_name: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME,
-        api_key: process.env.NEXT_PUBLIC_CLOUDINARY_API_KEY,
-        api_secret: process.env.CLOUDINARY_API_SECRET,
-    });
-};
-
 export async function POST(req: Request) {
     try {
-        configureCloudinary();
+        const cloudinary = getCloudinaryServer();
         const adminAuth = getAdminAuth();
         const adminDb = getAdminDb();
 

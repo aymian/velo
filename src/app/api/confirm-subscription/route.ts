@@ -1,21 +1,11 @@
 export const dynamic = 'force-dynamic';
 
 import { NextResponse } from "next/server";
-import Stripe from "stripe";
+import { getStripeServer } from "@/lib/stripe";
 import { getAdminDb } from "@/lib/firebase/admin";
 
-const getStripe = () => {
-    const key = process.env.STRIPE_SECRET_KEY;
-    if (!key) {
-        throw new Error("Missing STRIPE_SECRET_KEY");
-    }
-    return new Stripe(key, {
-        apiVersion: "2026-01-28.clover" as any,
-    });
-};
-
 export async function GET(req: Request) {
-    const stripe = getStripe();
+    const stripe = getStripeServer();
     const { searchParams } = new URL(req.url);
     const sessionId = searchParams.get("session_id");
 
