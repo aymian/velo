@@ -13,6 +13,23 @@ service cloud.firestore {
       return request.auth.uid == userId;
     }
 
+    // --- Subscription Helpers ---
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function hasPlan(plans) {
+      return getUserData().plan in plans;
+    }
+
+    function isPro() {
+      return hasPlan(['pro', 'elite']);
+    }
+
+    function isElite() {
+      return hasPlan(['elite']);
+    }
+
     // --- Core Velo Rules ---
 
     match /users/{userId} {
@@ -96,7 +113,10 @@ service cloud.firestore {
           get(/databases/$(database)/documents/conversations/$(conversationId)) == null ||
           request.auth.uid in get(/databases/$(database)/documents/conversations/$(conversationId)).data.participants
         );
-        allow create: if isSignedIn();
+        // Only allow image/file attachments if on Pro+ plan
+        allow create: if isSignedIn() && (
+          !request.resource.data.hasAttachment || isPro()
+        );
         allow delete: if isSignedIn() && resource.data.senderId == request.auth.uid;
       }
     }

@@ -16,6 +16,7 @@ import { uploadToCloudinary } from "@/lib/cloudinary";
 import { StorySticker } from "@/lib/firebase/collections";
 import { Navbar } from "@/components/Navbar";
 import { MentionTextarea } from "@/components/MentionTextarea";
+import { FeatureGate } from "@/components/ui/FeatureGate";
 import { cn } from "@/lib/utils";
 import * as Popover from "@radix-ui/react-popover";
 import { searchUsers, createStory } from "@/lib/firebase/helpers";
@@ -196,9 +197,10 @@ function CreateContent() {
 
             try {
                 // Upload to Cloudinary instead of Firebase Storage
+                const isPremium = user.plan && user.plan !== 'free';
                 const mediaUrl = await uploadToCloudinary(videoFile, (progress) => {
                     setUploadProgress(progress);
-                });
+                }, isPremium); // Use signed for premium
 
                 const storyId = `story_${Date.now()}_${user.uid}`;
                 const expiresAt = new Date();
@@ -723,9 +725,9 @@ function CreateContent() {
         const usernamePrefix = user?.username || user?.email?.split("@")?.[0] || "you";
 
         const postTypes = [
-            { id: "free", label: "Free", icon: Globe },
-            { id: "fans", label: "Fans only", icon: Users },
-            { id: "premium", label: "Premium", icon: Gem },
+            { id: "free", label: "Free", icon: Globe, feature: null },
+            { id: "fans", label: "Fans only", icon: Users, feature: "canUnlockExclusive" },
+            { id: "premium", label: "Premium", icon: Gem, feature: "canMonetize" },
         ] as const;
 
         return (
@@ -802,21 +804,32 @@ function CreateContent() {
                             <div className="space-y-2">
                                 <p className="text-[11px] text-white/30 uppercase tracking-widest px-1">Visibility</p>
                                 <div className="flex gap-2">
-                                    {postTypes.map(({ id, label, icon: Icon }) => (
-                                        <button
-                                            key={id}
-                                            onClick={() => setPostType(id as any)}
-                                            className={cn(
-                                                "flex items-center gap-2 px-4 py-2 rounded-lg border text-[13px] transition-all",
-                                                postType === id
-                                                    ? "border-white/20 bg-white/[0.07] text-white"
-                                                    : "border-white/[0.06] bg-transparent text-white/35 hover:text-white/60"
-                                            )}
-                                        >
-                                            <Icon className="w-3.5 h-3.5" />
-                                            {label}
-                                        </button>
-                                    ))}
+                                    {postTypes.map(({ id, label, icon: Icon, feature }) => {
+                                        const Button = (
+                                            <button
+                                                onClick={() => setPostType(id as any)}
+                                                className={cn(
+                                                    "flex items-center gap-2 px-4 py-2 rounded-lg border text-[13px] transition-all whitespace-nowrap",
+                                                    postType === id
+                                                        ? "border-white/20 bg-white/[0.07] text-white"
+                                                        : "border-white/[0.06] bg-transparent text-white/35 hover:text-white/60"
+                                                )}
+                                            >
+                                                <Icon className="w-3.5 h-3.5" />
+                                                {label}
+                                            </button>
+                                        );
+
+                                        if (feature) {
+                                            return (
+                                                <FeatureGate key={id} feature={feature as any}>
+                                                    {Button}
+                                                </FeatureGate>
+                                            );
+                                        }
+
+                                        return <React.Fragment key={id}>{Button}</React.Fragment>;
+                                    })}
                                 </div>
                             </div>
 

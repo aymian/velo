@@ -57,6 +57,10 @@ export interface User {
     photoURL: string | null;
     bio?: string;
     username?: string;
+    role?: 'member' | 'creator';
+    plan?: 'free' | 'basic' | 'pro' | 'elite';
+    subscriptionStatus?: 'active' | 'canceled' | 'expired' | 'trialing';
+    subscriptionEndsAt?: Date;
     followers?: number;
     following?: number;
     earned?: number;

@@ -12,6 +12,10 @@ interface AuthState {
         displayName: string | null;
         photoURL: string | null;
         username?: string;
+        role?: 'member' | 'creator';
+        plan?: 'free' | 'basic' | 'pro' | 'elite';
+        subscriptionStatus?: 'active' | 'canceled' | 'expired' | 'trialing';
+        verified?: boolean;
     } | null;
     isAuthenticated: boolean;
     isLoading: boolean;

@@ -10,14 +10,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     useEffect(() => {
         // 🚀 Listen for Firebase Auth state changes
-        const unsubscribe = onAuthStateChanged(auth, (user) => {
+        const unsubscribe = onAuthStateChanged(auth, async (user) => {
             if (user) {
                 // User is signed in, sync with store
+                // Also fetch full profile from Firestore
+                const { getDocument } = await import("@/lib/firebase/helpers");
+                const { COLLECTIONS } = await import("@/lib/firebase/collections");
+                const profile = await getDocument<any>(COLLECTIONS.USERS, user.uid);
+
                 setUser({
                     uid: user.uid,
                     email: user.email,
                     displayName: user.displayName,
                     photoURL: user.photoURL,
+                    username: profile?.username,
+                    role: profile?.role || 'member',
+                    plan: profile?.plan || 'free',
+                    subscriptionStatus: profile?.subscriptionStatus || 'active',
+                    verified: profile?.verified || false,
                 });
             } else {
                 // User is signed out

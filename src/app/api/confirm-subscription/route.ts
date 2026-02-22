@@ -28,15 +28,13 @@ export async function GET(req: Request) {
         // Update user in Firestore
         const userRef = adminDb.collection("users").doc(userId);
         await userRef.update({
-            subscription: {
-                status: "active",
-                plan: plan,
-                stripeSessionId: sessionId,
-                stripeCustomerId: session.customer,
-                updatedAt: new Date(),
-                trialEndsAt: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000), // 60 days from now
-            },
-            verified: true, // Optionally mark as verified if they paid
+            plan: plan || 'basic',
+            subscriptionStatus: 'active',
+            subscriptionEndsAt: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000), // 60 days trial/period
+            role: 'creator', // Premium users usually get creator privileges
+            stripeCustomerId: session.customer,
+            verified: true,
+            updatedAt: new Date(),
         });
 
         return NextResponse.json({ success: true });
