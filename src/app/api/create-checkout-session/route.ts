@@ -3,12 +3,19 @@ export const dynamic = 'force-dynamic';
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-    apiVersion: "2026-01-28.clover" as any,
-});
+const getStripe = () => {
+    const key = process.env.STRIPE_SECRET_KEY;
+    if (!key) {
+        throw new Error("Missing STRIPE_SECRET_KEY");
+    }
+    return new Stripe(key, {
+        apiVersion: "2026-01-28.clover" as any,
+    });
+};
 
 export async function POST(req: Request) {
     try {
+        const stripe = getStripe();
         const { plan, billing = "monthly", userId } = await req.json();
 
         // Prices in cents

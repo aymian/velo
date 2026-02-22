@@ -1,13 +1,21 @@
 import Mux from '@mux/mux-node';
 import { NextResponse } from 'next/server';
 
-const mux = new Mux({
-    tokenId: process.env.MUX_TOKEN_ID!,
-    tokenSecret: process.env.MUX_TOKEN_SECRET!,
-});
+const getMux = () => {
+    const tokenId = process.env.MUX_TOKEN_ID;
+    const tokenSecret = process.env.MUX_TOKEN_SECRET;
+    if (!tokenId || !tokenSecret) {
+        throw new Error("Missing Mux environment variables");
+    }
+    return new Mux({
+        tokenId,
+        tokenSecret,
+    });
+};
 
 export async function POST(req: Request) {
     try {
+        const mux = getMux();
         const upload = await mux.video.uploads.create({
             new_asset_settings: {
                 playback_policy: ['public'],

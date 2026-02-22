@@ -9,14 +9,17 @@ if (typeof window !== 'undefined') {
     console.warn('⚠️ Cloudinary sign route evaluated in client context');
 }
 
-cloudinary.config({
-    cloud_name: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME,
-    api_key: process.env.NEXT_PUBLIC_CLOUDINARY_API_KEY,
-    api_secret: process.env.CLOUDINARY_API_SECRET,
-});
+const configureCloudinary = () => {
+    cloudinary.config({
+        cloud_name: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME,
+        api_key: process.env.NEXT_PUBLIC_CLOUDINARY_API_KEY,
+        api_secret: process.env.CLOUDINARY_API_SECRET,
+    });
+};
 
 export async function POST(req: Request) {
     try {
+        configureCloudinary();
         const adminAuth = getAdminAuth();
         const adminDb = getAdminDb();
 

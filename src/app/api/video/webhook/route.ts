@@ -4,12 +4,20 @@ import { collection, query, where, getDocs, updateDoc, doc } from 'firebase/fire
 import { COLLECTIONS } from '@/lib/firebase/collections';
 import { NextResponse } from 'next/server';
 
-const mux = new Mux({
-    tokenId: process.env.MUX_TOKEN_ID!,
-    tokenSecret: process.env.MUX_TOKEN_SECRET!,
-});
+const getMux = () => {
+    const tokenId = process.env.MUX_TOKEN_ID;
+    const tokenSecret = process.env.MUX_TOKEN_SECRET;
+    if (!tokenId || !tokenSecret) {
+        throw new Error("Missing Mux environment variables");
+    }
+    return new Mux({
+        tokenId,
+        tokenSecret,
+    });
+};
 
 export async function POST(req: Request) {
+    const mux = getMux();
     const body = await req.json();
     const signature = req.headers.get('mux-signature');
 
