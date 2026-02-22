@@ -19,7 +19,8 @@ import {
     serverTimestamp,
     increment,
     writeBatch,
-    CollectionReference
+    CollectionReference,
+    addDoc
 } from 'firebase/firestore';
 import { ref as rtRef, set, update, increment as rtIncrement } from 'firebase/database';
 import {
@@ -241,11 +242,21 @@ export async function followUser(followerId: string, followingId: string) {
         updatedAt: serverTimestamp(),
     });
 
-    // Increment following count for follower user
-    const followerRef = doc(db, COLLECTIONS.USERS, followerId);
-    batch.update(followerRef, {
+    batch.update(followRef, {
         following: increment(1),
         updatedAt: serverTimestamp(),
+    });
+
+    // 🔔 Trigger Notification
+    const notificationsRef = collection(db, COLLECTIONS.USERS, followingId, 'notifications');
+    batch.set(doc(notificationsRef), {
+        type: 'follow',
+        title: 'New Follower 👤',
+        message: 'Someone started following you',
+        fromUserId: followerId,
+        read: false,
+        createdAt: serverTimestamp(),
+        fromSystem: false
     });
 
     return batch.commit();
@@ -339,9 +350,22 @@ export async function toggleLikePost(userId: string, postId: string) {
             'engagement.likes': increment(1),
             updatedAt: serverTimestamp()
         });
-        await update(rtEngagementRef, {
-            likes: rtIncrement(1)
-        });
+        // 🔔 Trigger Notification (only on Like, not Unlike)
+        const postData = (await getDoc(postRef)).data();
+        if (postData?.userId && postData.userId !== userId) {
+            const notificationsRef = collection(db, COLLECTIONS.USERS, postData.userId, 'notifications');
+            batch.set(doc(notificationsRef), {
+                type: 'like',
+                title: 'New Like ❤️',
+                message: 'Someone liked your post',
+                link: `/post/${postId}`,
+                fromUserId: userId,
+                targetId: postId,
+                read: false,
+                createdAt: serverTimestamp(),
+                fromSystem: false
+            });
+        }
     }
 
     await batch.commit();
@@ -367,18 +391,42 @@ export async function addComment(userId: string, postId: string, content: string
         updatedAt: serverTimestamp()
     });
 
-    batch.update(postRef, {
-        'engagement.comments': increment(1),
-        updatedAt: serverTimestamp()
-    });
-
-    // Sync to RTDB
-    await update(rtEngagementRef, {
-        comments: rtIncrement(1)
-    });
+    // 🔔 Trigger Notification
+    const postSnap = await getDoc(postRef);
+    const postData = postSnap.data();
+    if (postData?.userId && postData.userId !== userId) {
+        const notificationsRef = collection(db, COLLECTIONS.USERS, postData.userId, 'notifications');
+        batch.set(doc(notificationsRef), {
+            type: 'comment',
+            title: 'New Comment 💬',
+            message: `Someone commented on your post: "${content.substring(0, 30)}${content.length > 30 ? '...' : ''}"`,
+            link: `/post/${postId}`,
+            fromUserId: userId,
+            targetId: postId,
+            read: false,
+            createdAt: serverTimestamp(),
+            fromSystem: false
+        });
+    }
 
     await batch.commit();
     return commentRef.id;
+}
+// 🚀 System Notification Helper
+export async function sendSystemNotification(userId: string, data: {
+    type: 'system' | 'offer' | 'subscription' | 'verification';
+    title: string;
+    message: string;
+    link?: string;
+    image?: string;
+}) {
+    const notificationsRef = collection(db, COLLECTIONS.USERS, userId, 'notifications');
+    await addDoc(notificationsRef, {
+        ...data,
+        read: false,
+        fromSystem: true,
+        createdAt: serverTimestamp(),
+    });
 }
 
 export async function getComments(postId: string, limitCount = 50) {

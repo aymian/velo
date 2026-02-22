@@ -15,7 +15,10 @@ import {
   query as fireQuery,
   where as fireWhere,
   orderBy as fireOrderBy,
-  limit as fireLimit
+  limit as fireLimit,
+  updateDoc,
+  getDocs as fireGetDocs,
+  writeBatch as fireWriteBatch
 } from 'firebase/firestore';
 import { db, rtdb } from './config';
 import {
@@ -414,4 +417,68 @@ export function useUserPostsRealtime(userId: string | undefined, limitCount = 50
   }, [userId, limitCount]);
 
   return { data: posts, isLoading };
+}
+
+// 🔔 Notification Hooks
+export function useNotifications(userId: string | undefined) {
+  const [notifications, setNotifications] = React.useState<any[]>([]);
+  const [isLoading, setIsLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    if (!userId) {
+      setIsLoading(false);
+      return;
+    }
+
+    const q = fireQuery(
+      fireCollection(db, COLLECTIONS.USERS, userId, 'notifications'),
+      fireOrderBy('createdAt', 'desc'),
+      fireLimit(50)
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const data = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      setNotifications(data);
+      setIsLoading(false);
+    }, (error) => {
+      console.error("Error fetching notifications:", error);
+      setIsLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, [userId]);
+
+  return { data: notifications, isLoading };
+}
+
+export function useMarkNotificationRead() {
+  return useMutation({
+    mutationFn: async ({ userId, notificationId }: { userId: string; notificationId: string }) => {
+      const docRef = fireDoc(db, COLLECTIONS.USERS, userId, 'notifications', notificationId);
+      await updateDoc(docRef, { read: true });
+    }
+  });
+}
+
+export function useMarkAllNotificationsRead() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (userId: string) => {
+      const notificationsRef = fireCollection(db, COLLECTIONS.USERS, userId, 'notifications');
+      const q = fireQuery(notificationsRef, fireWhere('read', '==', false));
+      const snapshot = await fireGetDocs(q);
+
+      const batch = fireWriteBatch(db);
+      snapshot.docs.forEach((doc: any) => {
+        batch.update(doc.ref, { read: true });
+      });
+      await batch.commit();
+    },
+    onSuccess: (_, userId) => {
+      queryClient.invalidateQueries({ queryKey: ['notifications', userId] });
+    }
+  });
 }

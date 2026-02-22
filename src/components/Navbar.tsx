@@ -16,7 +16,8 @@ import {
   Info,
   Mail,
   ShoppingBag,
-  Bookmark
+  Bookmark,
+  Bell
 } from "lucide-react";
 import { useAuthStore, useSearchStore } from "@/lib/store";
 import { useOnboardingStore } from "@/store/onboarding-store";
@@ -25,7 +26,7 @@ import { UserDropdown } from "./UserDropdown";
 import { SearchOverlay } from "./SearchOverlay";
 import { ChatModal } from "./ChatModal";
 import { cn } from "@/lib/utils";
-import { useUserRealtime } from "@/lib/firebase/hooks";
+import { useUserRealtime, useNotifications } from "@/lib/firebase/hooks";
 import { VerifiedBadge } from "./ui/VerifiedBadge";
 
 export function Navbar() {
@@ -40,6 +41,10 @@ export function Navbar() {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
 
+  // 🔔 Real-time notifications for badge count
+  const { data: notifications = [] } = useNotifications(authUser?.uid);
+  const unreadCount = notifications.filter(n => !n.read).length;
+
   interface NavItem {
     name: string;
     icon: React.ForwardRefExoticComponent<Omit<React.SVGProps<SVGSVGElement>, "ref"> & React.RefAttributes<SVGSVGElement>>;
@@ -51,6 +56,8 @@ export function Navbar() {
     { name: "For You", icon: ThumbsUp, href: "/" },
     { name: "Following", icon: Users, href: "/following" },
     { name: "Explore", icon: Compass, href: "/explore" },
+    { name: "Activity", icon: Bell, href: "/notifications", badge: unreadCount > 0 ? unreadCount : undefined },
+    { name: "Messages", icon: Send, href: "/chat", badge: undefined }, // Messages can be added similarly if we had a useUnreadMessages hook
   ];
 
   useEffect(() => {

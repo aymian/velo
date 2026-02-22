@@ -129,11 +129,16 @@ export interface Follow {
 export interface Notification {
     id: string;
     userId: string;
-    type: 'like' | 'comment' | 'follow' | 'mention';
-    fromUserId: string;
+    type: 'like' | 'comment' | 'follow' | 'mention' | 'system' | 'offer' | 'subscription' | 'verification';
+    title?: string;
+    message: string;
+    link?: string;
+    fromUserId?: string;
+    fromSystem?: boolean;
     targetId?: string;
+    image?: string | null;
     read: boolean;
-    createdAt: Date;
+    createdAt: any;
 }
 
 // Livestream type
