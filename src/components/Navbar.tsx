@@ -19,13 +19,13 @@ import {
   Bell
 } from "lucide-react";
 import { useAuthStore, useSearchStore } from "@/lib/store";
-import { useOnboardingStore } from "@/store/onboarding-store";
 import { useRouter, usePathname } from "next/navigation";
 import { UserDropdown } from "./UserDropdown";
 import { SearchOverlay } from "./SearchOverlay";
 import { cn, isUserVerified } from "@/lib/utils";
 import { useUserRealtime, useNotifications } from "@/lib/firebase/hooks";
 import { VerifiedBadge } from "./ui/VerifiedBadge";
+import { LogoutModal } from "./modals/LogoutModal";
 
 export function Navbar() {
   const router = useRouter();
@@ -34,9 +34,9 @@ export function Navbar() {
   const { data: userProfile } = useUserRealtime(authUser?.uid);
   const user = userProfile || authUser;
   const { isOpen: isSearchOpen, setOpen: setIsSearchOpen } = useSearchStore();
-  const { coins } = useOnboardingStore();
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   // 🔔 Real-time notifications for badge count
   const { data: notifications = [] } = useNotifications(authUser?.uid);
@@ -58,18 +58,33 @@ export function Navbar() {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key.toLowerCase() === 's' && !isSearchOpen && document.activeElement?.tagName !== 'INPUT' && document.activeElement?.tagName !== 'TEXTAREA') {
+      const isTyping = document.activeElement?.tagName === 'INPUT' ||
+        document.activeElement?.tagName === 'TEXTAREA' ||
+        (document.activeElement as HTMLElement)?.isContentEditable;
+
+      if (e.key.toLowerCase() === 's' && !isSearchOpen && !isTyping) {
         e.preventDefault();
         setIsSearchOpen(true);
+      }
+
+      if (e.key.toLowerCase() === 'l' && isAuthenticated && !isTyping) {
+        e.preventDefault();
+        handleLogoutClick();
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isSearchOpen]);
+  }, [isSearchOpen, isAuthenticated]);
 
-  const handleLogout = () => {
+  const handleLogoutClick = () => {
+    setShowProfileMenu(false);
+    setShowLogoutModal(true);
+  };
+
+  const handleLogoutConfirm = () => {
     document.cookie = "velo-session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
     clearUser();
+    setShowLogoutModal(false);
     router.push('/');
   };
 
@@ -199,7 +214,7 @@ export function Navbar() {
                     >
                       <UserDropdown
                         user={user}
-                        onLogout={handleLogout}
+                        onLogout={handleLogoutClick}
                         onClose={() => setShowProfileMenu(false)}
                       />
                     </motion.div>
@@ -217,6 +232,11 @@ export function Navbar() {
         )}
       </div>
       <SearchOverlay isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
+      <LogoutModal
+        isOpen={showLogoutModal}
+        onClose={() => setShowLogoutModal(false)}
+        onConfirm={handleLogoutConfirm}
+      />
     </nav>
   );
 }

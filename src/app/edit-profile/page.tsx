@@ -274,9 +274,8 @@ function DeleteAccountModal({ onClose }: { onClose: () => void }) {
                             onClick={() => setReason(r)}
                             className="w-full flex items-center gap-3 text-left group"
                         >
-                            <span className={`w-5 h-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center transition-colors ${
-                                reason === r ? "border-[#FF2D55]" : "border-white/30 group-hover:border-white/60"
-                            }`}>
+                            <span className={`w-5 h-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center transition-colors ${reason === r ? "border-[#FF2D55]" : "border-white/30 group-hover:border-white/60"
+                                }`}>
                                 {reason === r && <span className="w-2.5 h-2.5 rounded-full bg-[#FF2D55]" />}
                             </span>
                             <span className="text-[14px] text-white/80">{r}</span>
@@ -452,11 +451,10 @@ function ToggleRow({ label, sublabel, checked, onChange }: {
             </div>
             <button
                 onClick={() => onChange(!checked)}
-                className={`relative w-10 h-[22px] rounded-full transition-all flex-shrink-0 mt-0.5 ${
-                    checked
-                        ? "bg-gradient-to-r from-[#FF2D55] to-[#a855f7]"
-                        : "bg-white/15"
-                }`}
+                className={`relative w-10 h-[22px] rounded-full transition-all flex-shrink-0 mt-0.5 ${checked
+                    ? "bg-gradient-to-r from-[#FF2D55] to-[#a855f7]"
+                    : "bg-white/15"
+                    }`}
             >
                 <span className={`absolute top-[3px] w-4 h-4 rounded-full bg-white shadow-sm transition-all ${checked ? "left-[22px]" : "left-[3px]"}`} />
             </button>
@@ -512,25 +510,35 @@ function SelectRow({ label, options, value, onChange }: {
 // ─────────────────────────────────────────────
 
 function AccountPanel({ user }: { user: any }) {
+    const { setUser } = useAuthStore();
     const [tfa, setTfa] = useState(true);
     const [modal, setModal] = useState<ModalConfig | null>(null);
     const [showPhone, setShowPhone] = useState(false);
     const [showDelete, setShowDelete] = useState(false);
-    const [localUser, setLocalUser] = useState(user);
 
     const openModal = (config: ModalConfig) => setModal(config);
     const closeModal = () => setModal(null);
 
     const handleSave = async (field: string, value: string) => {
         if (!user?.uid) return;
-        await updateUser(user.uid, { [field]: value });
-        setLocalUser((prev: any) => ({ ...prev, [field]: value }));
+        try {
+            await updateUser(user.uid, { [field]: value });
+            // Update global store to reflect changes across the app
+            setUser({ ...user, [field]: value });
+        } catch (error) {
+            console.error("Error updating user:", error);
+        }
     };
 
     const handlePhoneSave = async (phone: string) => {
         if (!user?.uid) return;
-        await updateUser(user.uid, { phone });
-        setLocalUser((prev: any) => ({ ...prev, phone }));
+        try {
+            await updateUser(user.uid, { phone });
+            // Update global store
+            setUser({ ...user, phone });
+        } catch (error) {
+            console.error("Error updating phone:", error);
+        }
     };
 
     return (
@@ -546,30 +554,30 @@ function AccountPanel({ user }: { user: any }) {
             <CategoryLabel label="Personal Info" />
             <SettingRow
                 label="Email"
-                value={localUser?.email || "—"}
-                action={{ label: "Edit", onClick: () => openModal({ field: "email", label: "Email", description: "Used only to contact you for special promotions and support. Not visible to anyone.", placeholder: localUser?.email || "your@email.com", type: "email", initialValue: localUser?.email || "" }) }}
+                value={user?.email || "—"}
+                action={{ label: "Edit", onClick: () => openModal({ field: "email", label: "Email", description: "Used only to contact you for special promotions and support. Not visible to anyone.", placeholder: user?.email || "your@email.com", type: "email", initialValue: user?.email || "" }) }}
             />
             <SettingRow
                 label="Display Name"
-                value={localUser?.displayName || "—"}
-                action={{ label: "Edit", onClick: () => openModal({ field: "displayName", label: "Display Name", description: "This is the name shown on your profile.", placeholder: "Your name", initialValue: localUser?.displayName || "" }) }}
+                value={user?.displayName || "—"}
+                action={{ label: "Edit", onClick: () => openModal({ field: "displayName", label: "Display Name", description: "This is the name shown on your profile.", placeholder: "Your name", initialValue: user?.displayName || "" }) }}
             />
             <SettingRow
                 label="Username"
-                value={localUser?.username ? `@${localUser.username}` : "—"}
-                action={{ label: "Edit", onClick: () => openModal({ field: "username", label: "Username", description: "Your unique handle on the platform.", placeholder: "username", initialValue: localUser?.username || "" }) }}
+                value={user?.username ? `@${user.username}` : "—"}
+                action={{ label: "Edit", onClick: () => openModal({ field: "username", label: "Username", description: "Your unique handle on the platform.", placeholder: "username", initialValue: user?.username || "" }) }}
             />
             <SettingRow
                 label="Bio"
-                value={localUser?.bio ? localUser.bio.slice(0, 30) + (localUser.bio.length > 30 ? "…" : "") : "—"}
-                action={{ label: "Edit", onClick: () => openModal({ field: "bio", label: "Bio", description: "Tell the world about yourself.", placeholder: "Write something about you…", initialValue: localUser?.bio || "" }) }}
+                value={user?.bio ? user.bio.slice(0, 30) + (user.bio.length > 30 ? "…" : "") : "—"}
+                action={{ label: "Edit", onClick: () => openModal({ field: "bio", label: "Bio", description: "Tell the world about yourself.", placeholder: "Write something about you…", initialValue: user?.bio || "" }) }}
             />
 
             <CategoryLabel label="Login Methods" />
             <SettingRow
                 label="Phone number"
-                value={localUser?.phone || undefined}
-                action={{ label: localUser?.phone ? "Change" : "Connect", onClick: () => setShowPhone(true) }}
+                value={user?.phone || undefined}
+                action={{ label: user?.phone ? "Change" : "Connect", onClick: () => setShowPhone(true) }}
             />
             <ToggleRow label="Two-Factor Authentication" sublabel="Extra layer of security" checked={tfa} onChange={setTfa} />
             <LinkRow label="Active Sessions" sublabel="2 devices signed in" />
@@ -781,7 +789,7 @@ function ContentPanel() {
 }
 
 function CreatorPanel() {
-    const { user } = useAuthStore();
+    const { user, setUser } = useAuthStore();
     const [settings, setSettings] = useState<Record<string, any>>({});
     const [modal, setModal] = useState<ModalConfig | null>(null);
     const [loading, setLoading] = useState(true);
@@ -795,7 +803,10 @@ function CreatorPanel() {
         if (!user?.uid) return;
         setSettings((p) => ({ ...p, [field]: value }));
         await saveSettings(user.uid, { [field]: value });
-        if (field === "agencyCode") await updateUser(user.uid, { agencyCode: value });
+        if (field === "agencyCode") {
+            await updateUser(user.uid, { agencyCode: value });
+            setUser({ ...user, agencyCode: value });
+        }
     };
 
     if (loading) return <div className="py-20 text-center text-white/30 text-sm">Loading…</div>;
@@ -913,11 +924,10 @@ export default function SettingsPage() {
                                 <button
                                     key={tab.id}
                                     onClick={() => setActiveTab(tab.id)}
-                                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors ${
-                                        isActive
-                                            ? "bg-gradient-to-r from-pink-500/15 to-purple-500/10 text-white border border-pink-500/20"
-                                            : "text-white/40 hover:text-white/70 hover:bg-white/[0.04]"
-                                    }`}
+                                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors ${isActive
+                                        ? "bg-gradient-to-r from-pink-500/15 to-purple-500/10 text-white border border-pink-500/20"
+                                        : "text-white/40 hover:text-white/70 hover:bg-white/[0.04]"
+                                        }`}
                                 >
                                     <Icon className={`w-4 h-4 flex-shrink-0 ${isActive ? "text-pink-400" : ""}`} strokeWidth={1.8} />
                                     <span className="text-[14px] font-medium flex-1">{tab.label}</span>
@@ -944,9 +954,8 @@ export default function SettingsPage() {
                                     <button
                                         key={tab.id}
                                         onClick={() => setActiveTab(tab.id)}
-                                        className={`flex items-center gap-1.5 px-3 py-2 rounded-lg whitespace-nowrap text-[12px] font-medium transition-colors flex-shrink-0 ${
-                                            isActive ? "bg-white/[0.08] text-white" : "text-white/40 hover:text-white/70"
-                                        }`}
+                                        className={`flex items-center gap-1.5 px-3 py-2 rounded-lg whitespace-nowrap text-[12px] font-medium transition-colors flex-shrink-0 ${isActive ? "bg-white/[0.08] text-white" : "text-white/40 hover:text-white/70"
+                                            }`}
                                     >
                                         <Icon className="w-3.5 h-3.5" />
                                         {tab.label}

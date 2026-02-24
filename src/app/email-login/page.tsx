@@ -36,8 +36,15 @@ function EmailLoginContent() {
         // type=true means new user (signup), type=false means existing user (login)
         if (typeParam === "true") {
             setIsNewUser(true);
+        } else {
+            setIsNewUser(false);
         }
     }, [searchParams]);
+
+    const toggleMode = () => {
+        setIsNewUser(!isNewUser);
+        setError("");
+    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -149,14 +156,23 @@ function EmailLoginContent() {
                         {isNewUser ? "Secure your account with a strong password" : "Welcome back! Enter your password to continue"}
                     </p>
 
-                    {/* Email Display */}
-                    <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-md border border-white/20 rounded-full px-4 py-2 mt-2">
-                        <span className="text-white/80 text-sm font-medium">{email}</span>
+                    {/* Email Display & Mode Toggle */}
+                    <div className="flex flex-col items-center gap-3">
+                        <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-md border border-white/20 rounded-full px-4 py-2 mt-2">
+                            <span className="text-white/80 text-sm font-medium">{email}</span>
+                            <button
+                                onClick={handleBack}
+                                className="text-white/60 hover:text-white text-xs underline"
+                            >
+                                Change
+                            </button>
+                        </div>
                         <button
-                            onClick={handleBack}
-                            className="text-white/60 hover:text-white text-xs underline"
+                            type="button"
+                            onClick={toggleMode}
+                            className="text-white/40 hover:text-white text-xs transition-colors hover:underline"
                         >
-                            Change
+                            {isNewUser ? "Already have an account? Log in" : "Don't have an account? Sign up"}
                         </button>
                     </div>
                 </motion.div>

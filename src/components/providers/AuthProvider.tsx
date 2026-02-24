@@ -24,8 +24,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                     displayName: user.displayName,
                     photoURL: user.photoURL,
                     username: profile?.username,
+                    bio: profile?.bio,
+                    phone: profile?.phone,
                     role: profile?.role || 'member',
                     plan: profile?.plan || 'free',
+                    onboardingCompleted: profile?.onboardingCompleted || false,
+                    agreedToTerms: profile?.agreedToTerms || false,
                     subscriptionStatus: profile?.subscriptionStatus || 'active',
                     verified: profile?.verified || false,
                 });
