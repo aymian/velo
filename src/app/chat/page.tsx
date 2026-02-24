@@ -17,7 +17,8 @@ import {
 } from "lucide-react";
 import data from "@emoji-mart/data";
 import Picker from "@emoji-mart/react";
-import { AgoraCallModal } from "@/components/AgoraCallModal";
+import { StreamCallModal } from "@/components/StreamCallModal";
+import { IncomingCallCard } from "@/components/IncomingCallCard";
 import { Navbar } from "@/components/Navbar";
 import { ConversationsSidebar } from "@/components/ConversationsSidebar";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -34,7 +35,8 @@ import {
     query,
     serverTimestamp,
     setDoc,
-    updateDoc
+    updateDoc,
+    Timestamp
 } from "firebase/firestore";
 import { COLLECTIONS, User as UserType } from "@/lib/firebase/collections";
 import { useAuthStore } from "@/lib/store";
@@ -102,7 +104,30 @@ export default function ChatPage() {
     const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const [callMode, setCallMode] = useState<"video" | "audio" | null>(null);
+    const [acceptedIncomingCall, setAcceptedIncomingCall] = useState<{ callId: string; mode: "video" | "audio"; peerName: string; peerAvatar?: string; peerId: string } | null>(null);
     const { isOverLimit, checkAndIncrement } = useMessageLimit();
+
+    // Write a call signal to Firestore so the recipient sees an incoming call card
+    const startStreamCall = async (mode: "video" | "audio") => {
+        if (!uid || !currentUser?.uid || !user) return;
+        const callId = conversationId ?? [currentUser.uid, uid].sort().join("_");
+        // Signal the recipient
+        try {
+            await setDoc(doc(db, "callSignals", uid), {
+                callId,
+                callType: mode,
+                callerId: currentUser.uid,
+                callerName: currentUser.displayName || currentUser.email?.split("@")[0] || "Someone",
+                callerAvatar: currentUser.photoURL || null,
+                conversationId: callId,
+                status: "ringing",
+                startedAt: serverTimestamp(),
+            });
+        } catch (e) {
+            console.error("Error signaling call", e);
+        }
+        setCallMode(mode);
+    };
 
     useEffect(() => {
         const fetchUser = async () => {
@@ -507,16 +532,49 @@ export default function ChatPage() {
 
     return (
         <main className="min-h-screen bg-[#0d0d0d] text-white selection:bg-[#FF2D55]">
+            {/* Incoming call card — shown app-wide to the recipient */}
+            <IncomingCallCard
+                onAccept={(call) => {
+                    setAcceptedIncomingCall({
+                        callId: call.callId,
+                        mode: call.callType,
+                        peerName: call.callerName,
+                        peerAvatar: call.callerAvatar,
+                        peerId: call.callerId,
+                    });
+                }}
+            />
+
+            {/* Outgoing call — current user initiated */}
             {callMode && currentUser?.uid && uid && (
-                <AgoraCallModal
+                <StreamCallModal
                     isOpen={!!callMode}
                     onClose={() => setCallMode(null)}
-                    channelName={callChannelName}
+                    callId={callChannelName}
                     mode={callMode}
                     peerName={displayName}
                     peerAvatar={user?.photoURL ?? undefined}
-                    callerId={currentUser.uid}
+                    currentUserId={currentUser.uid}
+                    currentUserName={currentUser.displayName || currentUser.email?.split("@")[0] || "Me"}
+                    currentUserAvatar={currentUser.photoURL ?? undefined}
                     peerId={uid}
+                />
+            )}
+
+            {/* Accepted incoming call */}
+            {acceptedIncomingCall && currentUser?.uid && (
+                <StreamCallModal
+                    isOpen={!!acceptedIncomingCall}
+                    onClose={() => setAcceptedIncomingCall(null)}
+                    callId={acceptedIncomingCall.callId}
+                    mode={acceptedIncomingCall.mode}
+                    peerName={acceptedIncomingCall.peerName}
+                    peerAvatar={acceptedIncomingCall.peerAvatar}
+                    currentUserId={currentUser.uid}
+                    currentUserName={currentUser.displayName || currentUser.email?.split("@")[0] || "Me"}
+                    currentUserAvatar={currentUser.photoURL ?? undefined}
+                    peerId={acceptedIncomingCall.peerId}
+                    isCallee={true}
                 />
             )}
 
@@ -557,24 +615,20 @@ export default function ChatPage() {
                                 </div>
                             </div>
                             <div className="flex items-center gap-2">
-                                <FeatureGate feature="hdStreaming">
-                                    <button
-                                        onClick={() => setCallMode("audio")}
-                                        disabled={!uid || showEmptyState}
-                                        className="p-2.5 rounded-full bg-white/[0.04] border border-white/[0.06] hover:bg-[#ff3b5c]/10 hover:border-[#ff3b5c]/20 text-white/50 hover:text-[#ff3b5c] transition-all disabled:opacity-30 disabled:cursor-not-allowed"
-                                    >
-                                        <Phone className="w-4.5 h-4.5" strokeWidth={1.8} />
-                                    </button>
-                                </FeatureGate>
-                                <FeatureGate feature="hdStreaming">
-                                    <button
-                                        onClick={() => setCallMode("video")}
-                                        disabled={!uid || showEmptyState}
-                                        className="p-2.5 rounded-full bg-white/[0.04] border border-white/[0.06] hover:bg-[#a855f7]/10 hover:border-[#a855f7]/20 text-white/50 hover:text-[#a855f7] transition-all disabled:opacity-30 disabled:cursor-not-allowed"
-                                    >
-                                        <Video className="w-4.5 h-4.5" strokeWidth={1.8} />
-                                    </button>
-                                </FeatureGate>
+                                <button
+                                    onClick={() => startStreamCall("audio")}
+                                    disabled={!uid || showEmptyState}
+                                    className="p-2.5 rounded-full bg-white/[0.04] border border-white/[0.06] hover:bg-[#ff3b5c]/10 hover:border-[#ff3b5c]/20 text-white/50 hover:text-[#ff3b5c] transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                                >
+                                    <Phone className="w-4.5 h-4.5" strokeWidth={1.8} />
+                                </button>
+                                <button
+                                    onClick={() => startStreamCall("video")}
+                                    disabled={!uid || showEmptyState}
+                                    className="p-2.5 rounded-full bg-white/[0.04] border border-white/[0.06] hover:bg-[#a855f7]/10 hover:border-[#a855f7]/20 text-white/50 hover:text-[#a855f7] transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                                >
+                                    <Video className="w-4.5 h-4.5" strokeWidth={1.8} />
+                                </button>
                                 <button className="p-2 hover:bg-white/10 rounded-full transition-all border border-white/10">
                                     <MoreHorizontal className="w-5 h-5" />
                                 </button>

@@ -10,7 +10,7 @@ import relativeTime from "dayjs/plugin/relativeTime";
 import { usePostLiked, useToggleLikePost, usePostEngagement } from "@/lib/firebase/hooks";
 import { useAuthStore, useNotificationStore } from "@/lib/store";
 import { CommentModal } from "./CommentModal";
-import { cn } from "@/lib/utils";
+import { cn, isUserVerified } from "@/lib/utils";
 import { VerifiedBadge } from "@/components/ui/VerifiedBadge";
 import CustomVideoPlayer from "@/components/video/CustomVideoPlayer";
 import { CLOUDINARY_CONFIG } from "@/lib/cloudinary-config";
@@ -32,14 +32,14 @@ export function TweetCard({ post }: TweetCardProps) {
     const [isMenuOpen, setIsMenuOpen] = React.useState(false);
     const [menuAnchor, setMenuAnchor] = React.useState<HTMLElement | null>(null);
 
-    // Realtime Engagement & Like status
+    // Realtime Engagement & Like status (Prioritize Realtime DB)
     const { data: isLiked } = usePostLiked(currentUser?.uid, post.id);
     const toggleLikeMutation = useToggleLikePost();
     const rtEngagement = usePostEngagement(post.id);
 
-    // Prefer RTDB for live counts, fallback to post data
-    const likesToShow = rtEngagement.likes || post.engagement?.likes || 0;
-    const commentsToShow = rtEngagement.comments || post.engagement?.comments || 0;
+    // Robust display logic: Use RTDB if available, fallback to post snapshot
+    const likesToShow = Math.max(0, rtEngagement.likes ?? post.engagement?.likes ?? 0);
+    const commentsToShow = Math.max(0, rtEngagement.comments ?? post.engagement?.comments ?? 0);
 
     const handleLike = async () => {
         if (!currentUser) {
@@ -101,7 +101,7 @@ export function TweetCard({ post }: TweetCardProps) {
                                 {creator?.username || "user"}
                             </span>
                             <VerifiedBadge
-                                showOnCondition={!!(creator?.verified || (creator?.plan && creator.plan !== "free"))}
+                                showOnCondition={isUserVerified(creator)}
                                 size={14}
                             />
                             <span className="text-white/30 text-[12px] ml-1">· {timeAgo}</span>

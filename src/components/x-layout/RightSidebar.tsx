@@ -4,15 +4,17 @@ import React, { useState, useEffect } from "react";
 import { useAuthStore } from "@/lib/store";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useRouter } from "next/navigation";
-import { cn } from "@/lib/utils";
+import { cn, isUserVerified } from "@/lib/utils";
 import { db } from "@/lib/firebase/config";
 import { collection, query, getDocs, limit, where } from "firebase/firestore";
 import { COLLECTIONS } from "@/lib/firebase/collections";
+import { VerifiedBadge } from "@/components/ui/VerifiedBadge";
 
-function StoryCircle({ username, imageUrl, hasUnseen, onClick }: {
+function StoryCircle({ username, imageUrl, hasUnseen, verified, onClick }: {
     username: string;
     imageUrl?: string;
     hasUnseen?: boolean;
+    verified?: boolean;
     onClick: () => void;
 }) {
     return (
@@ -34,9 +36,12 @@ function StoryCircle({ username, imageUrl, hasUnseen, onClick }: {
                 </div>
             </div>
             <div className="flex flex-col items-start truncate overflow-hidden">
-                <span className="text-[13px] font-bold text-white group-hover:text-[#FF2D55] transition-colors truncate w-full text-left">
-                    {username}
-                </span>
+                <div className="flex items-center gap-1.5 truncate w-full">
+                    <span className="text-[13px] font-bold text-white group-hover:text-[#FF2D55] transition-colors truncate">
+                        {username}
+                    </span>
+                    <VerifiedBadge showOnCondition={verified} size={12} />
+                </div>
                 <span className="text-[11px] text-white/40 font-medium">Recently updated</span>
             </div>
         </button>
@@ -51,12 +56,13 @@ const STAT_LABELS = [
     "+900 new subs",
 ];
 
-function TrendingCreator({ rank, username, displayName, imageUrl, stat, onClick }: {
+function TrendingCreator({ rank, username, displayName, imageUrl, stat, verified, onClick }: {
     rank: number;
     username: string;
     displayName: string;
     imageUrl?: string;
     stat: string;
+    verified?: boolean;
     onClick: () => void;
 }) {
     return (
@@ -72,9 +78,12 @@ function TrendingCreator({ rank, username, displayName, imageUrl, stat, onClick 
                 </AvatarFallback>
             </Avatar>
             <div className="flex flex-col items-start min-w-0 flex-1">
-                <span className="text-[13px] font-semibold text-white leading-tight truncate max-w-full">
-                    {displayName || username}
-                </span>
+                <div className="flex items-center gap-1.5 max-w-full">
+                    <span className="text-[13px] font-semibold text-white leading-tight truncate">
+                        {displayName || username}
+                    </span>
+                    <VerifiedBadge showOnCondition={verified} size={12} />
+                </div>
                 <span className="text-[12px] text-white/35 leading-tight">{stat}</span>
             </div>
             <span className="text-[11px] text-white/20 group-hover:text-white/50 transition-colors shrink-0">Follow</span>
@@ -168,7 +177,8 @@ export function RightSidebar() {
                                 username={s.user.username || s.user.displayName || "user"}
                                 imageUrl={s.user.photoURL}
                                 hasUnseen={true}
-                                onClick={() => router.push(`/view-story?username=${s.user.username || s.userId}`)}
+                                verified={isUserVerified(s.user)}
+                                onClick={() => router.push(`/profile/${s.user.username || s.userId}`)}
                             />
                         ))
                     )}
@@ -207,7 +217,8 @@ export function RightSidebar() {
                                 displayName={u.displayName || u.username || "Creator"}
                                 imageUrl={u.photoURL}
                                 stat={STAT_LABELS[i % STAT_LABELS.length]}
-                                onClick={() => router.push(`/@${u.username || u.uid}`)}
+                                verified={isUserVerified(u)}
+                                onClick={() => router.push(`/profile/${u.username || u.uid}`)}
                             />
                         ))
                     )}

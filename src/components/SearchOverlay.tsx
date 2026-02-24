@@ -9,7 +9,8 @@ import {
     User,
     TrendingUp,
     Clock,
-    Flame
+    Flame,
+    Archive
 } from "lucide-react";
 import * as Dialog from "@radix-ui/react-dialog";
 import * as ScrollArea from "@radix-ui/react-scroll-area";
@@ -20,6 +21,7 @@ import { collection, query, getDocs, limit, orderBy, startAt, endAt } from "fire
 import { COLLECTIONS } from "@/lib/firebase/collections";
 import { useRouter } from "next/navigation";
 import { useSearchStore } from "@/lib/store";
+import { isUserVerified } from "@/lib/utils";
 import { VerifiedBadge } from "./ui/VerifiedBadge";
 
 interface SearchOverlayProps {
@@ -136,18 +138,16 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
                     >
                         <Dialog.Title className="sr-only">Search Velo</Dialog.Title>
                         <div className="bg-[#0c0c0c] border border-white/[0.06] rounded-[28px] overflow-hidden shadow-[0_40px_120px_rgba(255,59,92,0.08),0_0_0_1px_rgba(255,255,255,0.03)]">
-                            <div className="relative flex items-center gap-3 px-5 py-4">
-                                <div className="flex items-center justify-center w-10 h-10 rounded-2xl bg-gradient-to-br from-[#ff3b5c]/10 to-[#a855f7]/10 border border-[#ff3b5c]/10 shrink-0">
-                                    <Search className="w-[18px] h-[18px] text-[#ff3b5c]" strokeWidth={2} />
-                                </div>
+                            <div className="relative flex items-center gap-4 px-6 py-4 bg-[#1a1a1a]">
+                                <Search className="w-5 h-5 text-white/40 shrink-0" strokeWidth={2} />
                                 <input
                                     ref={inputRef}
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
-                                    placeholder="Search creators, posts, tags..."
-                                    className="flex-1 h-10 bg-transparent text-[17px] text-white placeholder:text-white/20 font-medium tracking-tight outline-none caret-[#ff3b5c]"
+                                    placeholder="Search anything you want"
+                                    className="flex-1 h-10 bg-transparent text-[17px] text-white placeholder:text-[#4b8df8] font-medium tracking-tight outline-none caret-[#ff3b5c]"
                                 />
-                                <div className="flex items-center gap-2 shrink-0">
+                                <div className="flex items-center gap-4 shrink-0">
                                     {isLoading && (
                                         <div className="w-5 h-5 border-2 border-[#ff3b5c]/20 border-t-[#ff3b5c] rounded-full animate-spin" />
                                     )}
@@ -159,11 +159,8 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
                                             <X className="w-3.5 h-3.5 text-white/40" />
                                         </button>
                                     )}
-                                    <Dialog.Close asChild>
-                                        <button className="px-3 py-1.5 text-[12px] font-bold text-white/30 hover:text-white/60 transition-colors tracking-wide">
-                                            ESC
-                                        </button>
-                                    </Dialog.Close>
+                                    <div className="h-6 w-px bg-white/10" />
+                                    <Archive className="w-5 h-5 text-white/40 cursor-pointer hover:text-white/60 transition-colors" />
                                 </div>
                             </div>
 
@@ -277,7 +274,7 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
                                                                             {u.username ? `@${u.username}` : u.displayName || "Creator"}
                                                                         </span>
                                                                         <VerifiedBadge
-                                                                            showOnCondition={!!(u.verified || (u.plan && u.plan !== "free"))}
+                                                                            showOnCondition={isUserVerified(u)}
                                                                             size={12}
                                                                         />
                                                                     </div>
@@ -322,7 +319,7 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
                                                                         <div className="flex items-center gap-1.5">
                                                                             <span className="text-[13px] font-semibold text-white/80 truncate group-hover:text-white transition-colors">@{u.username}</span>
                                                                             <VerifiedBadge
-                                                                                showOnCondition={!!(u.verified || (u.plan && u.plan !== "free"))}
+                                                                                showOnCondition={isUserVerified(u)}
                                                                                 size={14}
                                                                             />
                                                                         </div>

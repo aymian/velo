@@ -18,7 +18,7 @@ export const metadata: Metadata = {
 };
 
 import { Providers } from "@/components/providers/QueryProvider";
-import { FloatingActions } from "@/components/FloatingActions";
+import { FloatingChatButton } from "@/components/FloatingChatButton";
 import { KeyboardShortcuts } from "@/components/providers/KeyboardShortcuts";
 import { ResponsiveGuard } from "@/components/providers/ResponsiveGuard";
 
@@ -38,7 +38,7 @@ export default function RootLayout({
               <Suspense fallback={<div>Loading...</div>}>
                 {children}
               </Suspense>
-              <FloatingActions />
+              <FloatingChatButton />
             </KeyboardShortcuts>
           </ResponsiveGuard>
         </Providers>

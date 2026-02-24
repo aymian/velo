@@ -17,6 +17,7 @@ import { Image, ShieldAlert, Smile, List, Layout, MapPin, X, Loader2 } from "luc
 import { Textarea } from "@/components/ui/textarea";
 import dayjs from "dayjs";
 import { VerifiedBadge } from "../ui/VerifiedBadge";
+import { isUserVerified } from "@/lib/utils";
 
 interface CommentModalProps {
     isOpen: boolean;
@@ -99,7 +100,7 @@ export function CommentModal({ isOpen, onClose, post, onCommentAdded }: CommentM
                                         {post.creator?.username || "user"}
                                     </span>
                                     <VerifiedBadge
-                                        showOnCondition={!!(post.creator?.verified || (post.creator?.plan && post.creator.plan !== "free"))}
+                                        showOnCondition={isUserVerified(post.creator)}
                                         size={14}
                                     />
                                     <span className="text-white/30 text-[12px] ml-1">· {dayjs(post.createdAt?.toDate?.() || post.createdAt).fromNow(true)}</span>

@@ -28,7 +28,7 @@ export function XFeed() {
     // UI Force Load State (as requested "like 10 seconds")
     const [forceLoading, setForceLoading] = useState(true);
     useEffect(() => {
-        const timer = setTimeout(() => setForceLoading(false), 10000);
+        const timer = setTimeout(() => setForceLoading(false), 1000);
         return () => clearTimeout(timer);
     }, []);
 
@@ -53,17 +53,22 @@ export function XFeed() {
             const snapshot = await getDocs(postsQuery);
             const lastVisible = snapshot.docs[snapshot.docs.length - 1];
 
-            const posts = await Promise.all(snapshot.docs.map(async (docSnapshot) => {
+            const postsWithCreators = await Promise.all(snapshot.docs.map(async (docSnapshot) => {
                 const data = docSnapshot.data() as Post;
                 const creatorDoc = await getDoc(doc(db, COLLECTIONS.USERS, data.creatorId));
-                const creatorData = creatorDoc.exists() ? creatorDoc.data() as User : undefined;
 
+                if (!creatorDoc.exists()) return null;
+
+                const creatorData = creatorDoc.data() as User;
                 return {
                     ...data,
                     id: docSnapshot.id,
                     creator: creatorData
                 };
             }));
+
+            // Filter out nulls (posts where creator was not found)
+            const posts = postsWithCreators.filter((p): p is (Post & { id: string; creator: User }) => p !== null);
 
             return { posts, lastVisible };
         } catch (error) {

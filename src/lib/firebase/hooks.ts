@@ -238,7 +238,9 @@ export function useToggleLikePost() {
       // Optimistically update the post's like count and liked status
       queryClient.setQueryData(QUERY_KEYS.post(postId), (old: any) => {
         if (!old) return old;
-        const newLikes = previousPostLiked ? old.engagement.likes - 1 : old.engagement.likes + 1;
+        const newLikes = previousPostLiked
+          ? Math.max(0, (old.engagement?.likes || 0) - 1)
+          : (old.engagement?.likes || 0) + 1;
         return {
           ...old,
           engagement: {
@@ -336,7 +338,7 @@ export function useAddComment() {
 }
 
 export function usePostEngagement(postId: string) {
-  const [engagement, setEngagement] = React.useState({ likes: 0, comments: 0 });
+  const [engagement, setEngagement] = React.useState<{ likes: number; comments: number } | null>(null);
 
   React.useEffect(() => {
     if (!postId) return;
@@ -345,15 +347,15 @@ export function usePostEngagement(postId: string) {
       if (snapshot.exists()) {
         const data = snapshot.val();
         setEngagement({
-          likes: data.likes || 0,
-          comments: data.comments || 0
+          likes: Math.max(0, data.likes || 0),
+          comments: Math.max(0, data.comments || 0)
         });
       }
     });
     return () => unsubscribe();
   }, [postId]);
 
-  return engagement;
+  return engagement || { likes: undefined, comments: undefined };
 }
 
 

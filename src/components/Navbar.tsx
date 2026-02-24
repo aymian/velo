@@ -8,7 +8,6 @@ import {
   Search,
   ThumbsUp,
   Users,
-  Send,
   Plus,
   Compass,
   ChevronDown,
@@ -24,22 +23,20 @@ import { useOnboardingStore } from "@/store/onboarding-store";
 import { useRouter, usePathname } from "next/navigation";
 import { UserDropdown } from "./UserDropdown";
 import { SearchOverlay } from "./SearchOverlay";
-import { ChatModal } from "./ChatModal";
-import { cn } from "@/lib/utils";
+import { cn, isUserVerified } from "@/lib/utils";
 import { useUserRealtime, useNotifications } from "@/lib/firebase/hooks";
 import { VerifiedBadge } from "./ui/VerifiedBadge";
 
 export function Navbar() {
   const router = useRouter();
   const pathname = usePathname();
-  const { user: authUser, isAuthenticated, clearUser } = useAuthStore();
+  const { user: authUser, isAuthenticated, clearUser, isLoading } = useAuthStore();
   const { data: userProfile } = useUserRealtime(authUser?.uid);
   const user = userProfile || authUser;
   const { isOpen: isSearchOpen, setOpen: setIsSearchOpen } = useSearchStore();
   const { coins } = useOnboardingStore();
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
-  const [isChatOpen, setIsChatOpen] = useState(false);
 
   // 🔔 Real-time notifications for badge count
   const { data: notifications = [] } = useNotifications(authUser?.uid);
@@ -56,8 +53,7 @@ export function Navbar() {
     { name: "For You", icon: ThumbsUp, href: "/" },
     { name: "Following", icon: Users, href: "/following" },
     { name: "Explore", icon: Compass, href: "/explore" },
-    { name: "Activity", icon: Bell, href: "/notifications", badge: unreadCount > 0 ? unreadCount : undefined },
-    { name: "Messages", icon: Send, href: "/chat", badge: undefined }, // Messages can be added similarly if we had a useUnreadMessages hook
+
   ];
 
   useEffect(() => {
@@ -98,9 +94,7 @@ export function Navbar() {
               onMouseEnter={() => setHoveredItem(item.name)}
               onMouseLeave={() => setHoveredItem(null)}
               onClick={() => {
-                if (item.name === "Chats") {
-                  setIsChatOpen(!isChatOpen);
-                } else if (pathname !== item.href) {
+                if (pathname !== item.href) {
                   router.push(item.href);
                 }
               }}
@@ -109,8 +103,7 @@ export function Navbar() {
                 <Icon
                   className={cn(
                     "w-[22px] h-[22px] transition-all duration-300",
-                    item.name === "Chats" && "-rotate-12 translate-x-0.5",
-                    (isHovered || isActive || (item.name === "Chats" && isChatOpen)) ? "text-white" : "text-white/50"
+                    (isHovered || isActive) ? "text-white" : "text-white/50"
                   )}
                   strokeWidth={1.8}
                 />
@@ -121,13 +114,13 @@ export function Navbar() {
                 )}
               </div>
 
-              <span className={`text-[10px] font-medium tracking-wide transition-all duration-300 ${(isHovered || isActive || (item.name === "Chats" && isChatOpen)) ? "text-white" : "text-white/30"
+              <span className={`text-[10px] font-medium tracking-wide transition-all duration-300 ${(isHovered || isActive) ? "text-white" : "text-white/30"
                 }`}>
                 {item.name}
               </span>
 
               {/* Active Underline & Glow */}
-              {(isActive || (item.name === "Chats" && isChatOpen)) && (
+              {isActive && (
                 <>
                   <motion.div
                     layoutId="navUnderline"
@@ -144,7 +137,10 @@ export function Navbar() {
       </div>
 
       <div className="flex items-center gap-3 sm:gap-4 w-[140px] sm:w-[180px] justify-end">
-        {isAuthenticated ? (
+        {isLoading ? (
+          // Empty space while loading to prevent flashing
+          <div className="w-11 h-11" />
+        ) : isAuthenticated ? (
           <>
             {/* Search Trigger */}
             <button
@@ -176,7 +172,7 @@ export function Navbar() {
                       className="w-full h-full object-cover"
                     />
                   </div>
-                  {user?.verified && (
+                  {isUserVerified(user) && (
                     <VerifiedBadge
                       className="absolute -bottom-0.5 -right-0.5 z-10 bg-black rounded-full border border-white/10 p-[1px]"
                       size={14}
@@ -221,7 +217,6 @@ export function Navbar() {
         )}
       </div>
       <SearchOverlay isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
-      <ChatModal isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} />
     </nav>
   );
 }

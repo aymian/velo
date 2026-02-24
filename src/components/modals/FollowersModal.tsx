@@ -54,7 +54,7 @@ export function FollowersModal({ isOpen, onClose, userId }: FollowersModalProps)
               <p className="text-white/40">No followers found.</p>
             )}
             {Array.isArray(followers) && followers.map((follower: User) => (
-              <Link href={`/@${follower.username || follower.uid}`} key={follower.uid} onClick={onClose}>
+              <Link href={`/profile/${follower.username || follower.uid}`} key={follower.uid} onClick={onClose}>
                 <div className="flex items-center gap-3 py-2 hover:bg-white/5 rounded-md px-2 -mx-2 transition-colors">
                   <Avatar className="w-10 h-10 border border-white/10">
                     <AvatarImage src={follower.photoURL || undefined} />

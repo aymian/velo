@@ -26,7 +26,7 @@ import { VideoPost } from "@/components/VideoPost";
 import { useCreatorPosts } from "@/lib/hooks/usePosts";
 import { useUser, useIsFollowing, useFollowUser, useUnfollowUser } from "@/lib/firebase/hooks";
 import * as Tabs from "@radix-ui/react-tabs";
-import { cn } from "@/lib/utils";
+import { cn, isUserVerified } from "@/lib/utils";
 
 // Lazy-load the heavy edit profile dialog
 const EditProfileDialog = lazy(() => import("@/components/EditProfileDialog"));
@@ -36,6 +36,7 @@ export default function ProfilePage() {
     const { user: authUser } = useAuthStore();
     const { data: userProfile } = useUser(authUser?.uid || "");
     const user = (userProfile || authUser) as any;
+    const isVerified = isUserVerified(user);
 
     const [activeTab, setActiveTab] = useState("all");
     const [isEditCardOpen, setIsEditCardOpen] = useState(false);
@@ -47,7 +48,7 @@ export default function ProfilePage() {
         { id: "all", label: "All", icon: Columns },
         { id: "fans", label: "For Fans", icon: Star },
         { id: "moments", label: "Moments", icon: PlaySquare },
-        { id: "cards", label: "Tango Cards", icon: Layout },
+        { id: "cards", label: "veeloo Cards", icon: Layout },
         { id: "collections", label: "Collections", icon: Gift },
     ], []);
 
@@ -79,26 +80,16 @@ export default function ProfilePage() {
                             <div>
                                 <div className="flex items-center gap-3 mb-0.5">
                                     <h1 className="text-[20px] font-semibold leading-tight">{user?.displayName || "Funny Badger"}</h1>
-                                    <VerifiedBadge showOnCondition={user?.verified} />
+                                    <VerifiedBadge showOnCondition={isVerified} />
                                 </div>
                                 <p className="text-white/40 text-[13px]">Rwanda, 19 y.o.</p>
-                            </div>
-                            <div className="flex items-center gap-5 pt-1">
-                                <Share2 className="w-[20px] h-[20px] text-white/40 cursor-pointer hover:text-white transition-colors" />
-                                <Pencil
-                                    className="w-[20px] h-[20px] text-white/40 cursor-pointer hover:text-white transition-colors"
-                                    onClick={() => setIsEditCardOpen(true)}
-                                />
                             </div>
                         </div>
 
                         <div className="flex items-center gap-10 mt-6 mb-8">
                             <div className="flex flex-col">
-                                <span className="text-[16px] font-semibold">{user?.earned || 0}</span>
-                                <div className="flex items-center gap-1.5 text-white/30">
-                                    <Gem className="w-3.5 h-3.5" />
-                                    <span className="text-[11px]">Earned</span>
-                                </div>
+                                <span className="text-[16px] font-semibold">{posts.length}</span>
+                                <span className="text-[11px] text-white/30">Posts</span>
                             </div>
                             <div className="flex flex-col">
                                 <span className="text-[16px] font-semibold">{user?.followers || 0}</span>
@@ -112,22 +103,36 @@ export default function ProfilePage() {
 
                         <div className="flex items-center gap-3">
                             <button
-                                disabled
-                                className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-8 py-2.5 bg-white/10 text-white/40 rounded-full font-bold text-[13px] cursor-not-allowed"
+                                onClick={() => router.push('/create')}
+                                className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-8 py-2.5 bg-[#ff3b5c] text-white rounded-full font-bold text-[13px] hover:bg-[#d6304d] transition-colors"
                             >
-                                Follow
+                                <Plus className="w-4 h-4" />
+                                Create Post
                             </button>
                             <button
-                                onClick={() => router.push('/chat')}
-                                className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-2.5 border border-white/20 rounded-full font-bold text-[13px] hover:bg-white/5 transition-colors"
+                                onClick={() => {
+                                    if (navigator.share) {
+                                        navigator.share({
+                                            title: `Check out ${user?.displayName || 'this profile'} on Velo`,
+                                            url: window.location.href
+                                        });
+                                    } else {
+                                        navigator.clipboard.writeText(window.location.href);
+                                        alert('Link copied to clipboard!');
+                                    }
+                                }}
+                                className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-8 py-2.5 border border-white/20 rounded-full font-bold text-[13px] hover:bg-white/5 transition-colors"
                             >
-                                <MessageCircle className="w-4 h-4" />
-                                Message
+                                <Share2 className="w-4 h-4" />
+                                Share
                             </button>
-                            <div className="relative w-10 h-10 bg-white/5 border border-white/10 rounded-full flex items-center justify-center cursor-pointer hover:bg-white/10 transition-all">
-                                <Gem className="w-[20px] h-[20px] text-white/40" />
-                                <div className="absolute top-0 right-0 w-2.5 h-2.5 bg-[#ff3b5c] border-2 border-black rounded-full" />
-                            </div>
+                            <button
+                                onClick={() => setIsEditCardOpen(true)}
+                                className="w-10 h-10 bg-white/5 border border-white/10 rounded-full flex items-center justify-center cursor-pointer hover:bg-white/10 transition-all text-white/40 hover:text-white"
+                                title="Edit Profile"
+                            >
+                                <Pencil className="w-[18px] h-[18px]" />
+                            </button>
                         </div>
                     </div>
                 </div>

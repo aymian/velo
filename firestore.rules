@@ -120,10 +120,8 @@ service cloud.firestore {
           get(/databases/$(database)/documents/conversations/$(conversationId)) == null ||
           request.auth.uid in get(/databases/$(database)/documents/conversations/$(conversationId)).data.participants
         );
-        // Only allow image/file attachments if on Pro+ plan
-        allow create: if isSignedIn() && (
-          !request.resource.data.hasAttachment || isPro()
-        );
+        // Allow any signed-in user to send messages and attachments
+        allow create: if isSignedIn();
         allow delete: if isSignedIn() && resource.data.senderId == request.auth.uid;
       }
     }
@@ -134,6 +132,14 @@ service cloud.firestore {
       match /{candidatesCol}/{candidateId} {
         allow read, write: if isSignedIn();
       }
+    }
+
+    // Stream Video call signals — document ID = recipient's UID
+    // Any signed-in user can write (to ring someone)
+    // Only the recipient (document owner) can read their own signal
+    match /callSignals/{userId} {
+      allow read: if isSignedIn() && isOwner(userId);
+      allow write: if isSignedIn();
     }
 
     // AI conversations
