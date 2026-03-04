@@ -1,0 +1,198 @@
+"use client";
+
+import { useState } from "react";
+import * as stylex from "@stylexjs/stylex";
+
+const T = {
+    bg: "#0A0A0A",
+    surface: "#111111",
+    pink: "#FF2D55",
+    purple: "#BF5AF2",
+    text: "#FFFFFF",
+    textSec: "rgba(255,255,255,0.5)",
+    textTer: "rgba(255,255,255,0.25)",
+    border: "rgba(255,255,255,0.08)",
+} as const;
+
+const styles = stylex.create({
+    section: {
+        backgroundColor: T.bg,
+        paddingBlock: "6rem",
+        paddingInline: "1.5rem",
+        position: "relative",
+        overflow: "hidden",
+    },
+    glow1: {
+        position: "absolute",
+        top: "50%",
+        left: "30%",
+        transform: "translate(-50%, -50%)",
+        width: "500px",
+        height: "400px",
+        backgroundImage: "radial-gradient(ellipse, rgba(255,45,85,0.12) 0%, transparent 70%)",
+        pointerEvents: "none",
+    },
+    glow2: {
+        position: "absolute",
+        top: "50%",
+        left: "70%",
+        transform: "translate(-50%, -50%)",
+        width: "400px",
+        height: "350px",
+        backgroundImage: "radial-gradient(ellipse, rgba(191,90,242,0.1) 0%, transparent 70%)",
+        pointerEvents: "none",
+    },
+    content: {
+        maxWidth: "680px",
+        marginInline: "auto",
+        textAlign: "center",
+        position: "relative",
+        zIndex: 1,
+    },
+    eyebrow: {
+        display: "inline-flex",
+        alignItems: "center",
+        gap: "8px",
+        backgroundColor: "rgba(255,45,85,0.1)",
+        borderWidth: "1px",
+        borderStyle: "solid",
+        borderColor: "rgba(255,45,85,0.25)",
+        borderRadius: "100px",
+        paddingBlock: "6px",
+        paddingInline: "16px",
+        marginBottom: "1.5rem",
+        fontSize: "0.75rem",
+        fontWeight: 600,
+        color: T.pink,
+        letterSpacing: "0.04em",
+    },
+    title: {
+        fontSize: "clamp(30px, 5vw, 52px)",
+        fontWeight: 900,
+        letterSpacing: "-1.5px",
+        lineHeight: 1.1,
+        color: T.text,
+        marginBottom: "1.25rem",
+    },
+    titleGradient: {
+        backgroundImage: "linear-gradient(135deg, #FF2D55, #BF5AF2)",
+        WebkitBackgroundClip: "text",
+        color: "transparent",
+    },
+    desc: {
+        fontSize: "1.0625rem",
+        color: T.textSec,
+        lineHeight: 1.7,
+        marginBottom: "2.5rem",
+    },
+    form: {
+        display: "flex",
+        gap: "10px",
+        maxWidth: "460px",
+        marginInline: "auto",
+        marginBottom: "1rem",
+    },
+    input: {
+        flex: 1,
+        paddingBlock: "14px",
+        paddingInline: "18px",
+        borderRadius: "10px",
+        borderWidth: "1px",
+        borderStyle: "solid",
+        backgroundColor: T.surface,
+        color: T.text,
+        fontSize: "15px",
+        outline: "none",
+        transitionProperty: "border-color",
+        transitionDuration: "0.2s",
+        fontFamily: "inherit",
+    },
+    inputFocused: {
+        borderColor: T.pink,
+    },
+    inputBlurred: {
+        borderColor: T.border,
+    },
+    submitBtn: {
+        paddingBlock: "14px",
+        paddingInline: "24px",
+        backgroundImage: "linear-gradient(135deg, #FF2D55, #BF5AF2)",
+        color: "#ffffff",
+        fontWeight: 700,
+        fontSize: "15px",
+        borderRadius: "10px",
+        border: "none",
+        cursor: "pointer",
+        whiteSpace: "nowrap",
+        flexShrink: 0,
+        transitionProperty: "transform",
+        transitionDuration: "0.2s",
+        fontFamily: "inherit",
+        ":hover": {
+            transform: "scale(1.03)",
+            boxShadow: "none",
+        },
+    },
+    footerText: {
+        fontSize: "13px",
+        color: T.textTer,
+    },
+});
+
+export default function CTASection() {
+    const [focused, setFocused] = useState(false);
+
+    return (
+        <section id="cta" {...stylex.props(styles.section)}>
+            <div {...stylex.props(styles.glow1)} />
+            <div {...stylex.props(styles.glow2)} />
+
+            <div {...stylex.props(styles.content)}>
+                <div {...stylex.props(styles.eyebrow)}>
+                    Ready to Switch?
+                </div>
+
+                <h2 {...stylex.props(styles.title)}>
+                    Get early access to a{" "}
+                    <span {...stylex.props(styles.titleGradient)}>
+                        better social
+                    </span>
+                </h2>
+
+                <p {...stylex.props(styles.desc)}>
+                    Join thousands choosing focus over noise, connection over virality,
+                    and privacy over surveillance.
+                </p>
+
+                <form
+                    id="cta-form"
+                    onSubmit={e => e.preventDefault()}
+                    {...stylex.props(styles.form)}
+                >
+                    <input
+                        id="cta-email"
+                        type="email"
+                        placeholder="Enter your email"
+                        onFocus={() => setFocused(true)}
+                        onBlur={() => setFocused(false)}
+                        {...stylex.props(
+                            styles.input,
+                            focused ? styles.inputFocused : styles.inputBlurred
+                        )}
+                    />
+                    <button
+                        id="cta-submit"
+                        type="submit"
+                        {...stylex.props(styles.submitBtn)}
+                    >
+                        Get Early Access
+                    </button>
+                </form>
+
+                <p {...stylex.props(styles.footerText)}>
+                    No spam. No ads. Unsubscribe any time.
+                </p>
+            </div>
+        </section>
+    );
+}

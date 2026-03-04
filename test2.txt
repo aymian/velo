@@ -1,208 +1,673 @@
 "use client";
 
-import { useState } from 'react';
-import { useAuthStore } from '@/lib/store';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Mail, Loader2, CheckCircle, User, Lock } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { supabase } from '@/lib/supabase';
-import { useRouter } from 'next/navigation';
+import { useState } from "react";
+import * as stylex from "@stylexjs/stylex";
+import { TrendingNow } from "./TrendingNow";
+import { BackgroundVideo } from "@/components/ui/BackgroundVideo";
+import { useAuthStore } from "@/lib/store";
 
-export function EmailSignupForm() {
-    const router = useRouter();
-    const { setUser } = useAuthStore();
-    const [email, setEmail] = useState('');
-    const [username, setUsername] = useState('');
-    const [password, setPassword] = useState('');
-    const [isLoading, setIsLoading] = useState(false);
-    const [status, setStatus] = useState<'idle' | 'success' | 'error'>('idle');
-    const [message, setMessage] = useState('');
+const T = {
+    white: "#FFFFFF",
+    white80: "rgba(255, 255, 255, 0.8)",
+    pink: "#FF2D55",
+    purple: "#BF5AF2",
+    surface: "#111111",
+    border: "rgba(255, 255, 255, 0.08)",
+    textSec: "rgba(255, 255, 255, 0.5)",
+    textTer: "rgba(255, 255, 255, 0.25)",
+} as const;
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
+const styles = stylex.create({
+    container: {
+        position: "relative",
+        minHeight: "100vh",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        paddingTop: "6rem",
+        paddingBottom: "4rem",
+        backgroundColor: "#0A0A0A",
+        overflow: "hidden",
+    },
+    inner: {
+        position: "relative",
+        zIndex: 10,
+        width: "100%",
+        maxWidth: "1200px",
+        paddingInline: "2rem",
+        display: "grid",
+        gridTemplateColumns: {
+            default: "1fr",
+            "@media (min-width: 1024px)": "1.2fr 0.8fr",
+        },
+        gap: "4rem",
+        alignItems: "center",
+    },
+    leftCol: {
+        display: "flex",
+        justifyContent: {
+            default: "center",
+            "@media (min-width: 1024px)": "flex-start",
+        },
+        alignItems: "center",
+        width: "100%",
+    },
+    rightCol: {
+        display: "flex",
+        flexDirection: "column",
+        textAlign: {
+            default: "center",
+            "@media (min-width: 1024px)": "left",
+        },
+    },
+    eyebrow: {
+        display: "inline-flex",
+        alignItems: "center",
+        gap: "8px",
+        backgroundColor: "rgba(255,45,85,0.1)",
+        borderWidth: "1px",
+        borderStyle: "solid",
+        borderColor: "rgba(255,45,85,0.25)",
+        borderRadius: "100px",
+        paddingBlock: "6px",
+        paddingInline: "16px",
+        marginBottom: "1.5rem",
+        fontSize: "0.75rem",
+        fontWeight: 600,
+        color: T.pink,
+        letterSpacing: "0.04em",
+        alignSelf: {
+            default: "center",
+            "@media (min-width: 1024px)": "flex-start",
+        },
+    },
+    title: {
+        fontSize: "clamp(32px, 5vw, 48px)",
+        fontWeight: 900,
+        letterSpacing: "-1.5px",
+        lineHeight: 1.1,
+        color: T.white,
+        marginBottom: "1.25rem",
+    },
+    titleGradient: {
+        backgroundImage: `linear-gradient(135deg, ${T.pink}, ${T.purple})`,
+        WebkitBackgroundClip: "text",
+        color: "transparent",
+    },
+    desc: {
+        fontSize: "1.0625rem",
+        color: T.textSec,
+        lineHeight: 1.7,
+        marginBottom: "2.5rem",
+        maxWidth: "500px",
+        marginInline: {
+            default: "auto",
+            "@media (min-width: 1024px)": "0",
+        },
+    },
+    form: {
+        display: "flex",
+        flexDirection: {
+            default: "column",
+            "@media (min-width: 500px)": "row",
+        },
+        gap: "10px",
+        width: "100%",
+        maxWidth: "460px",
+        marginInline: {
+            default: "auto",
+            "@media (min-width: 1024px)": "0",
+        },
+        marginBottom: "1rem",
+    },
+    input: {
+        flex: 1,
+        paddingBlock: "14px",
+        paddingInline: "18px",
+        borderRadius: "10px",
+        borderWidth: "1px",
+        borderStyle: "solid",
+        backgroundColor: T.surface,
+        color: T.white,
+        fontSize: "15px",
+        outline: "none",
+        transitionProperty: "border-color",
+        transitionDuration: "0.2s",
+        fontFamily: "inherit",
+    },
+    inputFocused: {
+        borderColor: T.pink,
+    },
+    inputBlurred: {
+        borderColor: T.border,
+    },
+    submitBtn: {
+        paddingBlock: "14px",
+        paddingInline: "28px",
+        backgroundImage: `linear-gradient(135deg, ${T.pink}, ${T.purple})`,
+        color: "#ffffff",
+        fontWeight: 700,
+        fontSize: "15px",
+        borderRadius: "10px",
+        borderWidth: 0,
+        borderStyle: "none",
+        outline: "none",
+        boxShadow: "none",
+        cursor: "pointer",
+        whiteSpace: "nowrap",
+        flexShrink: 0,
+        transitionProperty: "transform",
+        transitionDuration: "0.2s",
+        fontFamily: "inherit",
+        ":hover": {
+            transform: "scale(1.03)",
+            boxShadow: "none",
+        },
+    },
+    footerText: {
+        fontSize: "13px",
+        color: T.textTer,
+        marginTop: "1rem",
+    },
+    authenticatedContainer: {
+        position: "relative",
+        minHeight: "100vh",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        backgroundColor: "#000000",
+    },
+    authTitle: {
+        fontSize: "2rem",
+        fontWeight: 800,
+        color: T.white,
+        position: "relative",
+        zIndex: 10,
+    },
+    loading: {
+        position: "relative",
+        minHeight: "100vh",
+        backgroundColor: "#000000",
+    },
+});
 
-        // Validation
-        if (!email || !email.includes('@')) {
-            setStatus('error');
-            setMessage('Please enter a valid email address');
-            return;
-        }
+export function Hero() {
+    const { isAuthenticated, isLoading } = useAuthStore();
+    const [focused, setFocused] = useState(false);
 
-        if (!username || username.length < 3) {
-            setStatus('error');
-            setMessage('Username must be at least 3 characters');
-            return;
-        }
 
-        if (!password || password.length < 6) {
-            setStatus('error');
-            setMessage('Password must be at least 6 characters');
-            return;
-        }
+    if (isLoading) {
+        return <section {...stylex.props(styles.loading)} />;
+    }
 
-        setIsLoading(true);
-        setStatus('idle');
-        setMessage('');
+    return (
+        <section {...stylex.props(styles.container)}>
 
-        try {
-            // Sign up with Supabase using email and password
-            const { data, error } = await supabase.auth.signUp({
-                email,
-                password,
-                options: {
-                    data: {
-                        username: username,
-                        display_name: username,
-                    },
-                    emailRedirectTo: `${window.location.origin}/verify`,
-                }
-            });
 
-            if (error) {
-                setStatus('error');
-                setMessage(error.message || 'Failed to create account');
-                setIsLoading(false);
-                return;
-            }
+            <div {...stylex.props(styles.inner)}>
+                {/* LEFT COLUMN: Trending Cards */}
+                <div {...stylex.props(styles.leftCol)}>
+                    <TrendingNow />
+                </div>
 
-            // Save additional user data to Supabase database
-            if (data.user) {
-                const { error: dbError } = await supabase
-                    .from('users')
-                    .insert([
-                        {
-                            id: data.user.id,
-                            email: email,
-                            username: username,
-                            display_name: username,
-                            created_at: new Date().toISOString(),
-                        }
-                    ]);
+                {/* RIGHT COLUMN: CTA Content */}
+                <div {...stylex.props(styles.rightCol)}>
+                    <div {...stylex.props(styles.eyebrow)}>
+                        Ready to Switch?
+                    </div>
 
-                if (dbError) {
-                    console.error('Error saving user data:', dbError);
-                }
-            }
+                    <h1 {...stylex.props(styles.title)}>
+                        Get early access to a{" "}
+                        <span {...stylex.props(styles.titleGradient)}>
+                            better social
+                        </span>
+                    </h1>
 
-            setStatus('success');
-            setMessage('Check your email for the verification link!');
-        } catch (err: any) {
-            setStatus('error');
-            setMessage(err.message || 'An unexpected error occurred');
-        } finally {
-            setIsLoading(false);
-        }
+                    <p {...stylex.props(styles.desc)}>
+                        Join thousands choosing focus over noise, connection over virality,
+                        and privacy over surveillance.
+                    </p>
+
+                    <form
+                        id="cta-form-hero"
+                        onSubmit={e => e.preventDefault()}
+                        {...stylex.props(styles.form)}
+                    >
+                        <input
+                            id="cta-email-hero"
+                            type="email"
+                            placeholder="Enter your email"
+                            onFocus={() => setFocused(true)}
+                            onBlur={() => setFocused(false)}
+                            {...stylex.props(
+                                styles.input,
+                                focused ? styles.inputFocused : styles.inputBlurred
+                            )}
+                        />
+                        <button
+                            id="cta-submit-hero"
+                            type="submit"
+                            {...stylex.props(styles.submitBtn)}
+                        >
+                            Get Early Access
+                        </button>
+                    </form>
+
+                    <p {...stylex.props(styles.footerText)}>
+                        No spam. No ads. Unsubscribe any time.
+                    </p>
+                </div>
+            </div>
+        </section>
+    );
+}
+
+export default Hero;
+
+
+
+
+the TrendingNow it is this  
+
+"use client";
+
+import React, { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Heart, MoreHorizontal, Send, Star, Eye } from "lucide-react";
+import * as stylex from "@stylexjs/stylex";
+
+const T = {
+    pink: "#FF2D55", // Adjusted to match Velo pink
+    pinkLive: "#ff1493",
+    white: "#FFFFFF",
+    zinc400: "#a1a1aa",
+    surface: "#111111",
+    border: "rgba(255, 255, 255, 0.1)",
+    glow: "rgba(191, 90, 242, 0.2)",
+} as const;
+
+const styles = stylex.create({
+    section: {
+        position: "relative",
+        zIndex: 20,
+        width: "100%",
+        paddingTop: "0",
+        paddingBottom: "4rem",
+        overflow: "visible", // Allowed overflow for side cards
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "flex-start",
+        minHeight: "500px",
+    },
+    ambience: {
+        position: "absolute",
+        top: "40%",
+        left: "50%",
+        transform: "translate(-50%, -50%)",
+        width: "600px",
+        height: "600px",
+        backgroundColor: T.glow,
+        borderRadius: "50%",
+        filter: "blur(100px)",
+        pointerEvents: "none",
+    },
+    fanContainer: {
+        position: "relative",
+        width: "100%",
+        maxWidth: "600px",
+        height: "460px",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        perspective: "1200px",
+    },
+    sideCard: {
+        position: "absolute",
+        zIndex: 10,
+        width: "220px",
+        height: "400px",
+        borderRadius: "24px",
+        overflow: "hidden",
+        boxShadow: "0 20px 40px -12px rgba(255,45,85,0.15)",
+        borderWidth: "2px",
+        borderStyle: "solid",
+        borderColor: "rgba(255,255,255,0.1)",
+    },
+    centerCard: {
+        position: "relative",
+        zIndex: 30,
+        width: "260px",
+        height: "460px",
+        borderRadius: "32px",
+        overflow: "hidden",
+        boxShadow: "0 20px 60px -10px rgba(255,45,85,0.3)",
+        borderWidth: "3px",
+        borderStyle: "solid",
+        borderColor: "rgba(255,255,255,0.15)",
+        backgroundColor: "#000000",
+    },
+    progressContainer: {
+        position: "absolute",
+        top: "0.75rem",
+        left: "0.75rem",
+        right: "0.75rem",
+        display: "flex",
+        gap: "0.2rem",
+        zIndex: 20,
+    },
+    progressBar: {
+        height: "3px",
+        flex: 1,
+        backgroundColor: "rgba(255, 255, 255, 0.2)",
+        borderRadius: "999px",
+        overflow: "hidden",
+    },
+    progressActive: {
+        height: "100%",
+        backgroundColor: "#ffffff",
+    },
+    reactionBubble: {
+        position: "absolute",
+        bottom: "8rem",
+        left: "2rem",
+        backgroundImage: "linear-gradient(to bottom right, #FF2D55, #a855f7)",
+        width: "64px",
+        height: "64px",
+        borderRadius: "50%",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        boxShadow: "0 10px 30px rgba(255,45,85,0.3)",
+        zIndex: 20,
+    },
+    centerOverlay: {
+        position: "absolute",
+        top: 0,
+        left: 0,
+        right: 0,
+        padding: "1.25rem",
+        backgroundImage: "linear-gradient(to bottom, rgba(0,0,0,0.6), transparent)",
+        zIndex: 40,
+    },
+    centerBottomOverlay: {
+        position: "absolute",
+        bottom: 0,
+        left: 0,
+        right: 0,
+        padding: "1.25rem",
+        paddingBottom: "2rem",
+        backgroundImage: "linear-gradient(to top, rgba(0,0,0,0.8), rgba(0,0,0,0.4), transparent)",
+        zIndex: 40,
+    },
+    interactionBar: {
+        display: "flex",
+        alignItems: "center",
+        gap: "1rem",
+    },
+    inputOverlay: {
+        flex: 1,
+        height: "48px",
+        borderRadius: "999px",
+        borderWidth: "1px",
+        borderStyle: "solid",
+        borderColor: "rgba(255, 255, 255, 0.4)",
+        backgroundColor: "rgba(255, 255, 255, 0.1)",
+        backdropFilter: "blur(12px)",
+        display: "flex",
+        alignItems: "center",
+        paddingInline: "1.25rem",
+        color: "#ffffff",
+        fontSize: "0.875rem",
+        fontWeight: 500,
+    },
+    actionIcon: {
+        width: "48px",
+        height: "48px",
+        borderRadius: "50%",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        borderWidth: "1px",
+        borderStyle: "solid",
+        borderColor: "rgba(255, 255, 255, 0.4)",
+        backdropFilter: "blur(12px)",
+    },
+    homeIndicator: {
+        position: "absolute",
+        bottom: "0.5rem",
+        left: "50%",
+        transform: "translateX(-50%)",
+        width: "128px",
+        height: "6px",
+        backgroundColor: "rgba(255, 255, 255, 0.2)",
+        borderRadius: "999px",
+        zIndex: 40,
+    },
+    sticker: {
+        position: "absolute",
+        top: "6rem",
+        right: "-20px",
+        backgroundColor: "#00e676",
+        color: "#000",
+        fontWeight: 700,
+        paddingBlock: "0.5rem",
+        paddingInline: "1rem",
+        borderRadius: "12px",
+        transform: "rotate(12deg)",
+        boxShadow: "0 10px 15px -3px rgba(0,0,0,0.1)",
+        display: "flex",
+        alignItems: "center",
+        gap: "0.25rem",
+        zIndex: 20,
+    },
+    avatarMini: {
+        position: "absolute",
+        bottom: "5rem",
+        right: "1.5rem",
+        width: "48px",
+        height: "48px",
+        borderRadius: "50%",
+        borderWidth: "2px",
+        borderStyle: "solid",
+        borderColor: "#00e676",
+        overflow: "hidden",
+        zIndex: 20,
+    },
+    commentBox: {
+        position: "absolute",
+        top: "8rem",
+        left: "-3rem",
+        backgroundColor: "#ffffff",
+        borderRadius: "24px",
+        paddingBlock: "0.75rem",
+        paddingInline: "1rem",
+        boxShadow: "0 20px 25px -5px rgba(0,0,0,0.1)",
+        zIndex: 40,
+        display: "flex",
+        alignItems: "center",
+        gap: "0.5rem",
+    }
+});
+
+export function TrendingNow() {
+    const [activeIndex, setActiveIndex] = useState(0);
+
+    const images = Array.from({ length: 32 }, (_, i) => `/images/${i + 1}.png`);
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setActiveIndex((prev) => (prev + 1) % images.length);
+        }, 5000);
+        return () => clearInterval(interval);
+    }, [images.length]);
+
+    const getIndex = (offset: number) => {
+        return (activeIndex + offset + images.length) % images.length;
     };
 
     return (
-        <div className="w-full max-w-[420px] bg-[#16161D] border border-[#27272A] rounded-lg p-8 space-y-6">
-            <div className="text-center space-y-2">
-                <div className="flex justify-center mb-4">
-                    <div className="w-16 h-16 rounded-full bg-[#FF2D55]/10 border border-[#FF2D55]/20 flex items-center justify-center">
-                        <Mail className="w-8 h-8 text-[#FF2D55]" />
-                    </div>
-                </div>
-                <h1 className="text-2xl font-bold text-white">Create Account</h1>
-                <p className="text-[#A1A1AA]">Enter your details to get started</p>
-            </div>
+        <section {...stylex.props(styles.section)}>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="space-y-2">
-                    <Label htmlFor="username" className="text-white">Username</Label>
-                    <div className="relative">
-                        <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#71717A]" />
-                        <Input
-                            id="username"
-                            type="text"
-                            placeholder="johndoe"
-                            value={username}
-                            onChange={(e) => setUsername(e.target.value)}
-                            disabled={isLoading || status === 'success'}
-                            className="bg-[#0F0F14] border-[#27272A] text-white placeholder:text-[#71717A] focus:border-[#FF2D55] h-12 pl-10"
+            {/* Background Ambience */}
+            <div {...stylex.props(styles.ambience)} />
+
+            {/* 3D Fan Stack Container */}
+            <div {...stylex.props(styles.fanContainer)}>
+
+                {/* LEFT CARD */}
+                <motion.div
+                    {...stylex.props(styles.sideCard)}
+                    initial={{ opacity: 0, x: -60, rotate: -15 }}
+                    whileInView={{ opacity: 1, x: -160, rotate: -10, scale: 0.85 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.8 }}
+                    style={{ transformOrigin: "bottom right" }}
+                >
+                    <AnimatePresence mode="wait">
+                        <motion.img
+                            key={`left-${getIndex(-1)}`}
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            transition={{ duration: 0.5 }}
+                            src={images[getIndex(-1)]}
+                            alt="Previous Stream"
+                            style={{ width: "100%", height: "100%", objectFit: "cover" }}
                         />
-                    </div>
-                </div>
+                    </AnimatePresence>
 
-                <div className="space-y-2">
-                    <Label htmlFor="email" className="text-white">Email Address</Label>
-                    <div className="relative">
-                        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#71717A]" />
-                        <Input
-                            id="email"
-                            type="email"
-                            placeholder="you@example.com"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            disabled={isLoading || status === 'success'}
-                            className="bg-[#0F0F14] border-[#27272A] text-white placeholder:text-[#71717A] focus:border-[#FF2D55] h-12 pl-10"
+                    <div {...stylex.props(styles.progressContainer)}>
+                        <div {...stylex.props(styles.progressBar)}><div {...stylex.props(styles.progressActive)} style={{ width: "50%" }} /></div>
+                        <div {...stylex.props(styles.progressBar)} />
+                    </div>
+
+                    <div {...stylex.props(styles.reactionBubble)}>
+                        <Heart size={32} color="#fff" fill="#fff" />
+                    </div>
+                </motion.div>
+
+                {/* RIGHT CARD */}
+                <motion.div
+                    {...stylex.props(styles.sideCard)}
+                    initial={{ opacity: 0, x: 60, rotate: 15 }}
+                    whileInView={{ opacity: 1, x: 160, rotate: 10, scale: 0.85 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.8 }}
+                    style={{ transformOrigin: "bottom left" }}
+                >
+                    <AnimatePresence mode="wait">
+                        <motion.img
+                            key={`right-${getIndex(1)}`}
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            transition={{ duration: 0.5 }}
+                            src={images[getIndex(1)]}
+                            alt="Next Stream"
+                            style={{ width: "100%", height: "100%", objectFit: "cover" }}
                         />
-                    </div>
-                </div>
+                    </AnimatePresence>
 
-                <div className="space-y-2">
-                    <Label htmlFor="password" className="text-white">Password</Label>
-                    <div className="relative">
-                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#71717A]" />
-                        <Input
-                            id="password"
-                            type="password"
-                            placeholder="••••••••"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            disabled={isLoading || status === 'success'}
-                            className="bg-[#0F0F14] border-[#27272A] text-white placeholder:text-[#71717A] focus:border-[#FF2D55] h-12 pl-10"
+                    <div {...stylex.props(styles.progressContainer)}>
+                        <div {...stylex.props(styles.progressBar)} />
+                        <div {...stylex.props(styles.progressBar)} />
+                    </div>
+
+                    <div {...stylex.props(styles.sticker)}>
+                        <Star size={16} fill="#000" />
+                        <span>POPULAR</span>
+                    </div>
+
+                    <div {...stylex.props(styles.avatarMini)}>
+                        <img src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=100&h=100&fit=crop" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    </div>
+                </motion.div>
+
+                {/* CENTER CARD */}
+                <motion.div
+                    {...stylex.props(styles.centerCard)}
+                    initial={{ opacity: 0, y: 50, scale: 0.9 }}
+                    whileInView={{ opacity: 1, y: 0, scale: 1 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.8 }}
+                >
+                    <AnimatePresence mode="popLayout">
+                        <motion.img
+                            key={`center-${activeIndex}`}
+                            initial={{ opacity: 0.5, scale: 1.1 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0.5, scale: 0.9 }}
+                            transition={{ duration: 0.5 }}
+                            src={images[activeIndex]}
+                            alt="Main Stream"
+                            style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
                         />
-                    </div>
-                    <p className="text-xs text-[#71717A]">Must be at least 6 characters</p>
-                </div>
+                    </AnimatePresence>
 
-                {status === 'error' && (
-                    <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3">
-                        <p className="text-red-400 text-sm">{message}</p>
-                    </div>
-                )}
+                    {/* Top Overlay UI */}
+                    <div {...stylex.props(styles.centerOverlay)}>
+                        <div style={{ display: "flex", gap: "6px", marginBottom: "1rem" }}>
+                            <div {...stylex.props(styles.progressBar)}>
+                                <motion.div
+                                    key={activeIndex}
+                                    initial={{ width: "0%" }}
+                                    animate={{ width: "100%" }}
+                                    transition={{ duration: 5, ease: "linear" }}
+                                    style={{ height: "100%", backgroundColor: "#fff" }}
+                                />
+                            </div>
+                            <div {...stylex.props(styles.progressBar)} />
+                            <div {...stylex.props(styles.progressBar)} />
+                        </div>
 
-                {status === 'success' && (
-                    <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4 flex items-start gap-3">
-                        <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
-                        <div className="space-y-1">
-                            <p className="text-green-400 text-sm font-medium">{message}</p>
-                            <p className="text-green-400/70 text-xs">Click the link in your email to verify your account and continue to onboarding.</p>
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                                <div style={{ width: "40px", height: "40px", borderRadius: "50%", border: "2px solid #ff1493", padding: "2px" }}>
+                                    <img src="https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=100&h=100&fit=crop" style={{ width: "100%", height: "100%", borderRadius: "50%", objectFit: "cover" }} />
+                                </div>
+                                <div>
+                                    <h3 style={{ color: "#fff", fontWeight: 700, fontSize: "0.875rem" }}>Live Session</h3>
+                                    <span style={{ color: "rgba(255,255,255,0.6)", fontSize: "0.75rem" }}>Streaming now</span>
+                                </div>
+                            </div>
+                            <MoreHorizontal color="#fff" />
                         </div>
                     </div>
-                )}
 
-                <Button
-                    type="submit"
-                    disabled={isLoading || status === 'success'}
-                    className={cn(
-                        "w-full bg-[#FF2D55] hover:bg-[#FF4D6D] text-white font-bold h-14 text-lg rounded-lg transition-all shadow-lg shadow-[#FF2D55]/20",
-                        (isLoading || status === 'success') && "opacity-50 cursor-not-allowed"
-                    )}
-                >
-                    {isLoading ? (
-                        <span className="flex items-center gap-2">
-                            <Loader2 className="w-5 h-5 animate-spin" />
-                            Creating Account...
-                        </span>
-                    ) : status === 'success' ? (
-                        <span className="flex items-center gap-2">
-                            <CheckCircle className="w-5 h-5" />
-                            Check Your Email
-                        </span>
-                    ) : (
-                        'Create Account'
-                    )}
-                </Button>
-            </form>
+                    {/* Floating Reaction Bubble */}
+                    <motion.div
+                        animate={{ y: [0, -10, 0] }}
+                        transition={{ repeat: Infinity, duration: 3, ease: "easeInOut" }}
+                        {...stylex.props(styles.commentBox)}
+                    >
+                        <div style={{ backgroundColor: "#f3e8ff", padding: "6px", borderRadius: "50%" }}>
+                            <Eye size={16} color="#9333ea" />
+                        </div>
+                        <span style={{ fontSize: "1.5rem" }}>👀</span>
+                        <span style={{ fontSize: "1.5rem" }}>😲</span>
+                        <div style={{ width: "8px", height: "8px", backgroundColor: "#ef4444", borderRadius: "50%", position: "absolute", top: "-4px", right: "-4px" }} />
+                    </motion.div>
 
-            <div className="text-center">
-                <p className="text-xs text-[#71717A]">
-                    By continuing, you agree to our Terms of Service and Privacy Policy
-                </p>
+                    {/* Bottom Interactive UI */}
+                    <div {...stylex.props(styles.centerBottomOverlay)}>
+                        <div {...stylex.props(styles.interactionBar)}>
+                            <div {...stylex.props(styles.inputOverlay)}>
+                                <span>Send message...</span>
+                            </div>
+                            <div {...stylex.props(styles.actionIcon)}>
+                                <Heart size={24} color="#fff" />
+                            </div>
+                            <div {...stylex.props(styles.actionIcon)}>
+                                <Send size={20} color="#fff" style={{ marginLeft: "2px" }} />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div {...stylex.props(styles.homeIndicator)} />
+                </motion.div>
+
             </div>
-        </div>
+        </section>
     );
 }
