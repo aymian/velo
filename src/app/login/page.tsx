@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { BackgroundVideo } from "@/components/BackgroundVideo";
 import { LoginForm } from "@/components/auth/LoginForm";
 import { VeloLogo } from "@/components/VeloLogo";
 import Link from "next/link";
@@ -23,12 +22,6 @@ export default function LoginPage() {
 
   return (
     <div className="relative min-h-screen flex flex-col items-center justify-center p-6 overflow-hidden">
-      {/* 1. Background Video - Blurred for focus but visible for vibe */}
-      {/* 1. Background Video - Blurred for focus but visible for vibe */}
-      <BackgroundVideo blur={true} className="fixed inset-0 w-full h-full object-cover -z-20 opacity-80 contrast-125 saturate-150" />
-
-      {/* Dark overlay for accessibility */}
-      <div className="fixed inset-0 bg-black/40 -z-10 pointer-events-none" />
 
       {/* Top Bar with Home Link */}
       <div className="absolute top-6 left-6 z-20">

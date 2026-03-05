@@ -1,198 +1,336 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState, useEffect, JSX } from "react";
+import Link from "next/link";
+import { useRouter, usePathname } from "next/navigation";
 import * as stylex from "@stylexjs/stylex";
 
-const T = {
-    bg: "#0A0A0A",
-    surface: "#111111",
-    pink: "#FF2D55",
-    purple: "#BF5AF2",
-    text: "#FFFFFF",
-    textSec: "rgba(255,255,255,0.5)",
-    textTer: "rgba(255,255,255,0.25)",
-    border: "rgba(255,255,255,0.08)",
-} as const;
+// ─── Icons (inline SVGs, single stroke weight, flat) ─────────────────────────
+
+function ThumbsUpIcon({ active }: { active: boolean }) {
+    return (
+        <svg
+            width="22"
+            height="22"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={1.5}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            style={{ color: active ? "#FF2D55" : "rgba(255,255,255,0.5)", transition: "color 0.2s" }}
+        >
+            <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14z" />
+            <path d="M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3" />
+        </svg>
+    );
+}
+
+function UsersIcon({ active }: { active: boolean }) {
+    return (
+        <svg
+            width="22"
+            height="22"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={1.5}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            style={{ color: active ? "#FF2D55" : "rgba(255,255,255,0.5)", transition: "color 0.2s" }}
+        >
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+            <circle cx="9" cy="7" r="4" />
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+            <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+        </svg>
+    );
+}
+
+function CompassIcon({ active }: { active: boolean }) {
+    return (
+        <svg
+            width="22"
+            height="22"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={1.5}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            style={{ color: active ? "#FF2D55" : "rgba(255,255,255,0.5)", transition: "color 0.2s" }}
+        >
+            <circle cx="12" cy="12" r="10" />
+            <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76" />
+        </svg>
+    );
+}
+
+function SearchIcon() {
+    return (
+        <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={1.5}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+        >
+            <circle cx="11" cy="11" r="8" />
+            <line x1="21" y1="21" x2="16.65" y2="16.65" />
+        </svg>
+    );
+}
+
+// ─── StyleX styles (Sharp, No Glass) ─────────────────────────────────────────────
 
 const styles = stylex.create({
-    section: {
-        backgroundColor: T.bg,
-        paddingBlock: "6rem",
-        paddingInline: "1.5rem",
-        position: "relative",
-        overflow: "hidden",
-    },
-    glow1: {
-        position: "absolute",
-        top: "50%",
-        left: "30%",
-        transform: "translate(-50%, -50%)",
-        width: "500px",
-        height: "400px",
-        backgroundImage: "radial-gradient(ellipse, rgba(255,45,85,0.12) 0%, transparent 70%)",
-        pointerEvents: "none",
-    },
-    glow2: {
-        position: "absolute",
-        top: "50%",
-        left: "70%",
-        transform: "translate(-50%, -50%)",
-        width: "400px",
-        height: "350px",
-        backgroundImage: "radial-gradient(ellipse, rgba(191,90,242,0.1) 0%, transparent 70%)",
-        pointerEvents: "none",
-    },
-    content: {
-        maxWidth: "680px",
-        marginInline: "auto",
-        textAlign: "center",
-        position: "relative",
-        zIndex: 1,
-    },
-    eyebrow: {
-        display: "inline-flex",
-        alignItems: "center",
-        gap: "8px",
-        backgroundColor: "rgba(255,45,85,0.1)",
-        borderWidth: "1px",
-        borderStyle: "solid",
-        borderColor: "rgba(255,45,85,0.25)",
-        borderRadius: "100px",
-        paddingBlock: "6px",
-        paddingInline: "16px",
-        marginBottom: "1.5rem",
-        fontSize: "0.75rem",
-        fontWeight: 600,
-        color: T.pink,
-        letterSpacing: "0.04em",
-    },
-    title: {
-        fontSize: "clamp(30px, 5vw, 52px)",
-        fontWeight: 900,
-        letterSpacing: "-1.5px",
-        lineHeight: 1.1,
-        color: T.text,
-        marginBottom: "1.25rem",
-    },
-    titleGradient: {
-        backgroundImage: "linear-gradient(135deg, #FF2D55, #BF5AF2)",
-        WebkitBackgroundClip: "text",
-        color: "transparent",
-    },
-    desc: {
-        fontSize: "1.0625rem",
-        color: T.textSec,
-        lineHeight: 1.7,
-        marginBottom: "2.5rem",
-    },
-    form: {
+    nav: {
+        position: "fixed",
+        top: 0,
+        left: 0,
+        right: 0,
+        zIndex: 50,
+        paddingInline: "1rem",
+        height: "4.5rem",
         display: "flex",
-        gap: "10px",
-        maxWidth: "460px",
-        marginInline: "auto",
-        marginBottom: "1rem",
-    },
-    input: {
-        flex: 1,
-        paddingBlock: "14px",
-        paddingInline: "18px",
-        borderRadius: "10px",
-        borderWidth: "1px",
-        borderStyle: "solid",
-        backgroundColor: T.surface,
-        color: T.text,
-        fontSize: "15px",
-        outline: "none",
-        transitionProperty: "border-color",
+        alignItems: "center",
+        justifyContent: "space-between",
+        backgroundColor: "transparent",
+        borderBottom: "1px solid transparent",
+        transitionProperty: "background, border-color",
         transitionDuration: "0.2s",
-        fontFamily: "inherit",
     },
-    inputFocused: {
-        borderColor: T.pink,
+    navScrolled: {
+        backgroundColor: "transparent",
+        borderBottomColor: "transparent",
     },
-    inputBlurred: {
-        borderColor: T.border,
-    },
-    submitBtn: {
-        paddingBlock: "14px",
+
+    innerContainer: {
+        maxWidth: "1100px",
+        marginInline: "auto",
         paddingInline: "24px",
-        backgroundImage: "linear-gradient(135deg, #FF2D55, #BF5AF2)",
+        width: "100%",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        height: "100%",
+    },
+
+    logoSection: {
+        display: "flex",
+        alignItems: "center",
+        gap: "1rem",
+        width: "180px",
+    },
+    logoLink: {
+        display: "flex",
+        alignItems: "center",
+        gap: "10px",
+        fontWeight: 800,
+        fontSize: "22px",
+        letterSpacing: "-0.8px",
         color: "#ffffff",
-        fontWeight: 700,
-        fontSize: "15px",
-        borderRadius: "10px",
-        border: "none",
-        cursor: "pointer",
-        whiteSpace: "nowrap",
-        flexShrink: 0,
+        textDecoration: "none",
         transitionProperty: "transform",
         transitionDuration: "0.2s",
-        fontFamily: "inherit",
         ":hover": {
-            transform: "scale(1.03)",
-            boxShadow: "none",
+            transform: "scale(1.02)",
         },
     },
-    footerText: {
-        fontSize: "13px",
-        color: T.textTer,
+    logoMark: {
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        width: "30px",
+        height: "30px",
+        backgroundImage: "linear-gradient(135deg, #FF2D55, #BF5AF2)",
+        borderRadius: "8px",
+        color: "#ffffff",
+        fontSize: "15px",
+        fontWeight: 900,
+    },
+
+    navCenter: {
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: "4px",
+        flex: 1,
+    },
+    navItemWrapper: {
+        position: "relative",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        gap: "4px",
+        paddingBlock: "8px",
+        paddingInline: "20px",
+        cursor: "pointer",
+        justifyContent: "center",
+        height: "100%",
+        borderRadius: "10px",
+        transitionProperty: "background",
+        transitionDuration: "0.2s",
+        ":hover": {
+            backgroundColor: "rgba(255,255,255,0.03)",
+        },
+    },
+    navLabel: {
+        fontSize: "11px",
+        fontWeight: 600,
+        letterSpacing: "0.02em",
+        transitionProperty: "color",
+        transitionDuration: "0.2s",
+        color: "rgba(255,255,255,0.5)",
+    },
+    navLabelActive: {
+        color: "#ffffff",
+    },
+    navUnderline: {
+        position: "absolute",
+        bottom: "-8px",
+        left: "50%",
+        transform: "translateX(-50%)",
+        width: "4px",
+        height: "4px",
+        backgroundColor: "#FF2D55",
+        borderRadius: "50%",
+    },
+
+    rightSection: {
+        display: "flex",
+        alignItems: "center",
+        gap: "12px",
+        width: "fit-content", // Allow it to expand for the long text
+        minWidth: "180px",
+        justifyContent: "flex-end",
+    },
+
+    searchButton: {
+        padding: "10px",
+        background: "none",
+        borderWidth: 0,
+        borderStyle: "none",
+        outline: "none",
+        cursor: "pointer",
+        color: "rgba(255,255,255,0.4)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        transitionProperty: "color, transform",
+        transitionDuration: "0.2s",
+        ":hover": {
+            color: "#ffffff",
+            transform: "scale(1.05)",
+        },
+    },
+
+    joinButton: {
+        backgroundImage: "linear-gradient(135deg, #FF2D55, #BF5AF2)",
+        color: "#ffffff",
+        paddingBlock: "10px",
+        paddingInline: "20px",
+        borderRadius: "10px",
+        fontWeight: 800,
+        fontSize: "14px",
+        borderWidth: 0,
+        borderStyle: "none",
+        whiteSpace: "nowrap", // 👈 FORCE HORIZONTAL
+        outline: "none",
+        cursor: "pointer",
+        transitionProperty: "transform, filter",
+        transitionDuration: "0.2s",
+        boxShadow: "none",
+        ":hover": {
+            filter: "brightness(1.1)",
+            transform: "scale(1.05)",
+        },
+    },
+    loginButton: {
+        backgroundColor: "transparent",
+        color: "#ffffff",
+        paddingBlock: "10px",
+        paddingInline: "20px",
+        borderRadius: "10px",
+        fontWeight: 700,
+        fontSize: "14px",
+        borderWidth: "1px",
+        borderStyle: "solid",
+        borderColor: "rgba(255,255,255,0.25)",
+        outline: "none",
+        cursor: "pointer",
+        transitionProperty: "transform, background-color, border-color",
+        transitionDuration: "0.2s",
+        ":hover": {
+            backgroundColor: "rgba(255,255,255,0.06)",
+            borderColor: "rgba(255,255,255,0.4)",
+            transform: "scale(1.05)",
+        },
     },
 });
 
-export default function CTASection() {
-    const [focused, setFocused] = useState(false);
+const NAV_ITEMS: Array<{ name: string; Icon: ({ active }: { active: boolean }) => JSX.Element; href: string }> = [];
+
+import VeloLogo from "./VeloLogo";
+
+export default function Navbar() {
+    const router = useRouter();
+    const pathname = usePathname();
+    const [scrolled, setScrolled] = useState(false);
+    const [hoveredItem, setHoveredItem] = useState<string | null>(null);
+
+    useEffect(() => {
+        const onScroll = () => setScrolled(window.scrollY > 20);
+        window.addEventListener("scroll", onScroll);
+        return () => window.removeEventListener("scroll", onScroll);
+    }, []);
 
     return (
-        <section id="cta" {...stylex.props(styles.section)}>
-            <div {...stylex.props(styles.glow1)} />
-            <div {...stylex.props(styles.glow2)} />
-
-            <div {...stylex.props(styles.content)}>
-                <div {...stylex.props(styles.eyebrow)}>
-                    Ready to Switch?
+        <nav {...stylex.props(styles.nav, scrolled && styles.navScrolled)}>
+            <div {...stylex.props(styles.innerContainer)}>
+                <div {...stylex.props(styles.logoSection)}>
+                    <Link href="/" style={{ textDecoration: "none" }}>
+                        <VeloLogo />
+                    </Link>
                 </div>
 
-                <h2 {...stylex.props(styles.title)}>
-                    Get early access to a{" "}
-                    <span {...stylex.props(styles.titleGradient)}>
-                        better social
-                    </span>
-                </h2>
+                <div {...stylex.props(styles.navCenter)}>
+                    {NAV_ITEMS.map((item) => {
+                        const isHovered = hoveredItem === item.name;
+                        const isActive = pathname === item.href;
+                        const highlighted = isHovered || isActive;
 
-                <p {...stylex.props(styles.desc)}>
-                    Join thousands choosing focus over noise, connection over virality,
-                    and privacy over surveillance.
-                </p>
+                        return (
+                            <div
+                                key={item.name}
+                                {...stylex.props(styles.navItemWrapper)}
+                                onMouseEnter={() => setHoveredItem(item.name)}
+                                onMouseLeave={() => setHoveredItem(null)}
+                                onClick={() => router.push(item.href)}
+                            >
+                                <item.Icon active={highlighted} />
+                                <span {...stylex.props(styles.navLabel, highlighted && styles.navLabelActive)}>
+                                    {item.name}
+                                </span>
+                                {isActive && <div {...stylex.props(styles.navUnderline)} />}
+                            </div>
+                        );
+                    })}
+                </div>
 
-                <form
-                    id="cta-form"
-                    onSubmit={e => e.preventDefault()}
-                    {...stylex.props(styles.form)}
-                >
-                    <input
-                        id="cta-email"
-                        type="email"
-                        placeholder="Enter your email"
-                        onFocus={() => setFocused(true)}
-                        onBlur={() => setFocused(false)}
-                        {...stylex.props(
-                            styles.input,
-                            focused ? styles.inputFocused : styles.inputBlurred
-                        )}
-                    />
+                <div {...stylex.props(styles.rightSection)}>
+                    <button {...stylex.props(styles.joinButton)}>Join Free Trial 0$</button>
                     <button
-                        id="cta-submit"
-                        type="submit"
-                        {...stylex.props(styles.submitBtn)}
+                        {...stylex.props(styles.loginButton)}
+                        onClick={() => router.push("/login")}
                     >
-                        Get Early Access
+                        Login
                     </button>
-                </form>
-
-                <p {...stylex.props(styles.footerText)}>
-                    No spam. No ads. Unsubscribe any time.
-                </p>
+                </div>
             </div>
-        </section>
+        </nav>
     );
 }

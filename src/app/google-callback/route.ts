@@ -73,8 +73,9 @@ export async function GET(request: NextRequest) {
 
         console.log('✅ Google authentication successful:', userInfo.email);
 
-        // Create session and redirect to verifying page
-        let targetRedirect = state;
+        // Create session and redirect to onboarding page
+        // Always send user to onboarding step 1 (Age verification)
+        let targetRedirect = '/onboarding?step=1&id=age';
         try {
             const userRef = adminDb.collection(COLLECTIONS.USERS).doc(userInfo.id);
             const userDoc = await userRef.get();
@@ -93,9 +94,6 @@ export async function GET(request: NextRequest) {
                 userData.createdAt = new Date();
                 // @ts-ignore
                 userData.username = userInfo.email.split('@')[0] + Math.floor(Math.random() * 1000);
-
-                // If new user, force them to onboarding
-                targetRedirect = '/onboarding';
             }
 
             await userRef.set(userData, { merge: true });
@@ -104,11 +102,10 @@ export async function GET(request: NextRequest) {
             // Continue even if database update fails during local dev
         }
 
-        const verifyingUrl = new URL('/verifying', request.url);
-        verifyingUrl.searchParams.set('provider', 'google');
-        verifyingUrl.searchParams.set('redirect', targetRedirect);
-
-        const response = NextResponse.redirect(verifyingUrl);
+        // Directly redirect to onboarding instead of intermediate "verifying" page
+        const redirectUrl = new URL(targetRedirect, request.url);
+        redirectUrl.searchParams.set('provider', 'google');
+        const response = NextResponse.redirect(redirectUrl);
 
         // Set session cookie with user data
         response.cookies.set('velo-session', JSON.stringify({

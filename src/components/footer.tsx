@@ -7,16 +7,10 @@ import {
   Twitter,
   Youtube,
   Instagram,
-  Smartphone,
   Globe,
-  Mail,
-  ShieldCheck,
-  Heart,
-  ArrowRight,
   Send
 } from "lucide-react";
 import { VeloLogo } from "./VeloLogo";
-import { TypewriterEffect } from "./ui/TypewriterEffect";
 
 const footerLinks = {
   company: [
@@ -43,41 +37,7 @@ export default function VeloFooter() {
   return (
     <footer className="relative mt-40 z-30">
 
-      {/* 1. Netflix-style Floating CTA Card */}
-      <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-[90%] max-w-5xl z-40">
-        <div className="relative overflow-hidden rounded-2xl bg-[#0f0f0f] border border-white/10 p-12 md:p-16 shadow-2xl flex flex-col items-center text-center">
-
-          {/* Subtle Background Glows */}
-          <div className="absolute top-0 right-0 w-full h-full bg-gradient-to-bl from-pink-900/10 via-transparent to-transparent opacity-50 pointer-events-none"></div>
-
-          <div className="relative z-10 max-w-3xl mx-auto space-y-6">
-            <h2 className="text-4xl md:text-5xl font-black text-white tracking-tight min-h-[1.2em]">
-              <TypewriterEffect text="Ready to start your journey?" delay={0.2} />
-            </h2>
-            <p className="text-lg text-zinc-400 max-w-xl mx-auto min-h-[3em]">
-              <TypewriterEffect text="Enter your email to create your account or restart your membership. Join the Velo community today." delay={1.5} cursorColor="#a1a1aa" />
-            </p>
-
-            {/* Email Input Group */}
-            <div className="flex flex-col sm:flex-row items-stretch gap-3 w-full max-w-2xl mx-auto pt-6">
-              <input
-                type="email"
-                placeholder="Email address"
-                className="flex-1 bg-black/50 text-white border border-white/20 rounded-md px-6 py-4 text-base outline-none focus:border-[#ff1493] focus:ring-1 focus:ring-[#ff1493] transition-all placeholder:text-zinc-500 hover:bg-black/70"
-              />
-
-              <button className="flex items-center justify-center gap-2 bg-[#ff1493] hover:bg-[#ff0080] text-white px-8 py-4 rounded-md font-bold text-lg whitespace-nowrap transition-all duration-300 hover:scale-105 active:scale-95">
-                Get Started
-                <ArrowRight className="w-5 h-5" />
-              </button>
-            </div>
-          </div>
-
-        </div>
-      </div>
-
-      {/* 2. Main Footer Content */}
-      <div className="bg-black pt-96 pb-20 border-t border-white/5 relative overflow-hidden">
+      <div className="bg-black pt-20 pb-20 border-t border-white/5 relative overflow-hidden">
 
         <div className="container mx-auto px-6 md:px-12 relative z-10">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-12 mb-20 border-b border-white/5 pb-16">

@@ -1,16 +1,16 @@
 @import "tailwindcss";
 
 @theme {
-  /* Tango.me Signature Pink/White Aesthetic */
-  --color-primary: #FF2D55;
+  /* Calm & Modern System */
+  --color-primary: #2563EB;
   --color-primary-foreground: #FFFFFF;
 
-  /* Velo Dark — matches zinc-900 premium page tone */
-  --color-background: #111113;
+  --color-background: #0B0B0F;
   --color-foreground: #FFFFFF;
-  --color-surface: #18181b;
-  --color-surface-hover: #27272a;
-  --color-black: #111113;
+  --color-surface: #111217;
+  --color-surface-hover: #1c1d24;
+  --color-muted: #9CA3AF;
+  --color-border: #1F2937;
 
   /* Compact Flat Density */
   --radius-lg: 2rem;
@@ -181,9 +181,8 @@
 /* Nova-style Density: Reducing padding for a "Fast" UI */
 @layer base {
   body {
-    background: linear-gradient(135deg, #000000 0%, #18181b 50%, #000000 100%);
-    background-attachment: fixed;
-    color: #fff;
+    background: #0B0B0F;
+    color: #FFFFFF;
   }
 
   button,
@@ -194,16 +193,16 @@
 
 
 
-@layer utilities {
-  .velo-gradient {
-    background: linear-gradient(135deg, #a855f7 0%, #ff2d55 100%);
-  }
+@utility velo-gradient {
+  background: #2563EB;
+}
 
-  .velo-gradient-hover:hover {
-    background: linear-gradient(135deg, #9333ea 0%, #ff1f4b 100%);
+@utility velo-gradient-hover {
+  &:hover {
+    background: #1d4ed8;
   }
+}
 
-  .velo-glow {
-    box-shadow: 0 0 30px rgba(168, 85, 247, 0.35);
-  }
+@utility velo-glow {
+  box-shadow: 0 0 30px rgba(37, 99, 235, 0.2);
 }

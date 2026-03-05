@@ -26,6 +26,8 @@ import { cn, isUserVerified } from "@/lib/utils";
 import { useUserRealtime, useNotifications } from "@/lib/firebase/hooks";
 import { VerifiedBadge } from "./ui/VerifiedBadge";
 import { LogoutModal } from "./modals/LogoutModal";
+import { signOut } from "firebase/auth";
+import { auth } from "@/lib/firebase/config";
 
 export function Navbar() {
   const router = useRouter();
@@ -81,8 +83,17 @@ export function Navbar() {
     setShowLogoutModal(true);
   };
 
-  const handleLogoutConfirm = () => {
+  const handleLogoutConfirm = async () => {
+    try {
+      await signOut(auth);
+    } catch (e) {}
     document.cookie = "velo-session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+    try {
+      if (typeof window !== "undefined") {
+        window.localStorage.removeItem("velo-auth-storage");
+        window.localStorage.removeItem("emailForSignIn");
+      }
+    } catch (e) {}
     clearUser();
     setShowLogoutModal(false);
     router.push('/');
@@ -96,62 +107,64 @@ export function Navbar() {
         </Link>
       </div>
 
-      <div className="hidden lg:flex items-center justify-center gap-10 flex-1">
-        {navItems.map((item) => {
-          const Icon = item.icon;
-          const isHovered = hoveredItem === item.name;
-          const isActive = pathname === item.href;
+      {isAuthenticated && (
+        <div className="hidden lg:flex items-center justify-center gap-10 flex-1">
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            const isHovered = hoveredItem === item.name;
+            const isActive = pathname === item.href;
 
-          return (
-            <div
-              key={item.name}
-              className="relative flex flex-col items-center gap-1 py-1 px-3 group cursor-pointer h-full justify-center"
-              onMouseEnter={() => setHoveredItem(item.name)}
-              onMouseLeave={() => setHoveredItem(null)}
-              onClick={() => {
-                if (pathname !== item.href) {
-                  router.push(item.href);
-                }
-              }}
-            >
-              <div className="relative">
-                <Icon
-                  className={cn(
-                    "w-[22px] h-[22px] transition-all duration-300",
-                    (isHovered || isActive) ? "text-white" : "text-white/50"
+            return (
+              <div
+                key={item.name}
+                className="relative flex flex-col items-center gap-1 py-1 px-3 group cursor-pointer h-full justify-center"
+                onMouseEnter={() => setHoveredItem(item.name)}
+                onMouseLeave={() => setHoveredItem(null)}
+                onClick={() => {
+                  if (pathname !== item.href) {
+                    router.push(item.href);
+                  }
+                }}
+              >
+                <div className="relative">
+                  <Icon
+                    className={cn(
+                      "w-[22px] h-[22px] transition-all duration-300",
+                      (isHovered || isActive) ? "text-white" : "text-white/50"
+                    )}
+                    strokeWidth={1.8}
+                  />
+                  {item.badge && (
+                    <span className="absolute -top-1 -right-1.5 bg-[#FF2D55] text-white text-[9px] font-bold w-3.5 h-3.5 rounded-full flex items-center justify-center border-[1.5px] border-[#0F0F0F]">
+                      {item.badge}
+                    </span>
                   )}
-                  strokeWidth={1.8}
-                />
-                {item.badge && (
-                  <span className="absolute -top-1 -right-1.5 bg-[#FF2D55] text-white text-[9px] font-bold w-3.5 h-3.5 rounded-full flex items-center justify-center border-[1.5px] border-[#0F0F0F]">
-                    {item.badge}
-                  </span>
+                </div>
+
+                <span className={`text-[10px] font-medium tracking-wide transition-all duration-300 ${(isHovered || isActive) ? "text-white" : "text-white/30"
+                  }`}>
+                  {item.name}
+                </span>
+
+                {/* Active Underline & Glow */}
+                {isActive && (
+                  <>
+                    <motion.div
+                      layoutId="navUnderline"
+                      className="absolute bottom-0 left-3 right-3 h-0.5 bg-gradient-to-r from-[#ff3b5c] to-[#f127a3] rounded-full z-10"
+                      initial={false}
+                      transition={{ type: "spring", stiffness: 450, damping: 35 }}
+                    />
+                    <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-4 bg-[#ff3b5c]/20 blur-xl rounded-full pointer-events-none" />
+                  </>
                 )}
               </div>
+            );
+          })}
+        </div>
+      )}
 
-              <span className={`text-[10px] font-medium tracking-wide transition-all duration-300 ${(isHovered || isActive) ? "text-white" : "text-white/30"
-                }`}>
-                {item.name}
-              </span>
-
-              {/* Active Underline & Glow */}
-              {isActive && (
-                <>
-                  <motion.div
-                    layoutId="navUnderline"
-                    className="absolute bottom-0 left-3 right-3 h-0.5 bg-gradient-to-r from-[#ff3b5c] to-[#f127a3] rounded-full z-10"
-                    initial={false}
-                    transition={{ type: "spring", stiffness: 450, damping: 35 }}
-                  />
-                  <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-4 bg-[#ff3b5c]/20 blur-xl rounded-full pointer-events-none" />
-                </>
-              )}
-            </div>
-          );
-        })}
-      </div>
-
-      <div className="flex items-center gap-3 sm:gap-4 w-[140px] sm:w-[180px] justify-end">
+      <div className="flex items-center gap-3 sm:gap-4 justify-end">
         {isLoading ? (
           // Empty space while loading to prevent flashing
           <div className="w-11 h-11" />
@@ -224,11 +237,18 @@ export function Navbar() {
             </div>
           </>
         ) : (
-          <Link href="/login">
-            <button className="bg-[#FF2D55] hover:bg-[#FF4D6D] text-white px-8 py-2.5 rounded-full font-bold text-xs uppercase tracking-widest transition-all hover:scale-105 active:scale-95 shadow-xl shadow-pink-500/20">
-              Sign in
-            </button>
-          </Link>
+          <div className="flex items-center gap-2">
+            <Link href="/signup">
+              <button className="bg-[linear-gradient(135deg,#FF2D55,#BF5AF2)] text-white px-5 py-2.5 rounded-xl font-extrabold text-sm whitespace-nowrap transition-transform duration-200 hover:brightness-110 hover:scale-105">
+                Start Free Trial
+              </button>
+            </Link>
+            <Link href="/login">
+              <button className="bg-transparent text-white px-5 py-2.5 rounded-xl font-bold text-sm border border-white/25 hover:bg-white/10 hover:border-white/40 transition-transform duration-200 hover:scale-105">
+                Login
+              </button>
+            </Link>
+          </div>
         )}
       </div>
       <SearchOverlay isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />

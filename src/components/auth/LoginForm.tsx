@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Loader2 } from "lucide-react";
 import Link from "next/link";
@@ -20,66 +20,76 @@ export function LoginForm({
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState("");
 
-    // 🚀 Google Popup Authentication with user syncing
+    useEffect(() => {
+        (async () => {
+            try {
+                const { getRedirectResult } = await import("firebase/auth");
+                const { auth, db } = await import("@/lib/firebase/config");
+                const result = await getRedirectResult(auth);
+
+                // If this page was not loaded as part of a Firebase redirect,
+                // there will be no result and we just exit.
+                if (!result) return;
+
+                const user = result.user;
+                const targetRoute = '/onboarding?step=1&id=age';
+
+                try {
+                    const { doc, setDoc, getDoc, serverTimestamp } = await import("firebase/firestore");
+                    const { COLLECTIONS } = await import("@/lib/firebase/collections");
+                    const userRef = doc(db, COLLECTIONS.USERS, user.uid);
+                    const userSnap = await getDoc(userRef);
+
+                    const userData: any = {
+                        uid: user.uid,
+                        email: user.email,
+                        displayName: user.displayName,
+                        photoURL: user.photoURL,
+                        lastLogin: serverTimestamp(),
+                        updatedAt: serverTimestamp(),
+                    };
+
+                    if (!userSnap.exists()) {
+                        userData.createdAt = serverTimestamp();
+                        userData.bio = "";
+                        userData.role = "user";
+                        userData.stats = { followers: 0, following: 0, impact: 0 };
+                        userData.onboardingCompleted = false;
+                    }
+
+                    await setDoc(userRef, userData, { merge: true });
+                    useAuthStore.getState().setUser({
+                        uid: user.uid,
+                        email: user.email,
+                        displayName: user.displayName,
+                        photoURL: user.photoURL
+                    });
+                } catch (dbError) {
+                    // If Firestore fails, still continue to onboarding
+                    console.error('Failed to sync user after Google redirect:', dbError);
+                }
+
+                // Always redirect to onboarding after a successful Google redirect
+                router.push(targetRoute);
+            } catch (e: any) {
+                if (e && e.code === 'auth/no-auth-event') return;
+            } finally {
+                setIsLoading(false);
+            }
+        })();
+    }, [router]);
+
+    // Google Redirect via Firebase (no popup)
     const handleGoogleLogin = async () => {
         setIsLoading(true);
         setError("");
         try {
-            const { GoogleAuthProvider, signInWithPopup } = await import("firebase/auth");
-            const { auth, db } = await import("@/lib/firebase/config");
-            const { doc, setDoc, getDoc, serverTimestamp } = await import("firebase/firestore");
-            const { COLLECTIONS } = await import("@/lib/firebase/collections");
-
+            const { GoogleAuthProvider, signInWithRedirect } = await import("firebase/auth");
+            const { auth } = await import("@/lib/firebase/config");
             const provider = new GoogleAuthProvider();
-            const result = await signInWithPopup(auth, provider);
-            const user = result.user;
-
-            const userRef = doc(db, COLLECTIONS.USERS, user.uid);
-            const userSnap = await getDoc(userRef);
-
-            let targetRoute = '/discover';
-
-            const userData: any = {
-                uid: user.uid,
-                email: user.email,
-                displayName: user.displayName,
-                photoURL: user.photoURL,
-                lastLogin: serverTimestamp(),
-                updatedAt: serverTimestamp(),
-            };
-
-            if (!userSnap.exists()) {
-                // New User
-                userData.createdAt = serverTimestamp();
-                userData.bio = "";
-                userData.role = "user";
-                userData.stats = { followers: 0, following: 0, impact: 0 };
-                userData.onboardingCompleted = false;
-
-                targetRoute = '/onboarding';
-            } else {
-                // Existing User
-                const data = userSnap.data();
-                if (data?.onboardingCompleted) {
-                    targetRoute = '/discover';
-                } else {
-                    targetRoute = '/onboarding';
-                }
-            }
-
-            await setDoc(userRef, userData, { merge: true });
-
-            useAuthStore.getState().setUser({
-                uid: user.uid,
-                email: user.email,
-                displayName: user.displayName,
-                photoURL: user.photoURL
-            });
-
-            router.push(targetRoute);
+            await signInWithRedirect(auth, provider);
         } catch (err: any) {
-            console.error("Login Error:", err);
-            setError(err.message || "Failed to authenticate with Google");
+            setError(err?.message || "Failed to start Google authentication");
             setIsLoading(false);
         }
     };

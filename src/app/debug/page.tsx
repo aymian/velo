@@ -4,6 +4,8 @@ import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
 import { useOnboardingStore } from '@/store/onboarding-store';
 import { useAuthStore } from '@/lib/store';
+import { signOut } from 'firebase/auth';
+import { auth } from '@/lib/firebase/config';
 
 export default function DebugPage() {
     const router = useRouter();
@@ -22,7 +24,17 @@ export default function DebugPage() {
         alert('Onboarding reset to step 1!');
     };
 
-    const logout = () => {
+    const logout = async () => {
+        try {
+            await signOut(auth);
+        } catch (e) {}
+        try {
+            if (typeof window !== 'undefined') {
+                window.localStorage.removeItem('velo-auth-storage');
+                window.localStorage.removeItem('emailForSignIn');
+            }
+        } catch (e) {}
+        document.cookie = "velo-session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
         clearUser();
         router.push('/login');
     };

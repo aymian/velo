@@ -26,7 +26,7 @@ export function FloatingChatButton() {
             </AnimatePresence>
 
             <motion.div
-                initial={{ scale: 0, opacity: 0, y: 20 }}
+                initial={{ scale: 0, opacity: 0, y: 20 } as any}
                 animate={{ scale: 1, opacity: 1, y: 0 }}
                 transition={{
                     type: "spring",
