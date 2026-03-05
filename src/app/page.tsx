@@ -1,8 +1,5 @@
 "use client";
 
-"use client";
-
-import * as stylex from "@stylexjs/stylex";
 import { Navbar } from "@/components/Navbar";
 import { HeroSection } from "@/components/HeroSection";
 import Footer from "@/components/footer";
@@ -10,20 +7,6 @@ import { useAuthStore } from "@/lib/store";
 import { TwitterLayout } from "@/components/x-layout/TwitterLayout";
 import { TwitterLayoutSkeleton } from "@/components/x-layout/TwitterLayoutSkeleton";
 import { useEffect, useState } from "react";
-
-const styles = stylex.create({
-  main: {
-    position: "relative",
-    display: "flex",
-    flexDirection: "column",
-    minHeight: "100vh",
-    backgroundColor: "#02010a",
-  },
-  skeletonMain: {
-    backgroundColor: "#000000",
-    minHeight: "100vh",
-  },
-});
 
 export default function Home() {
   const { isAuthenticated, isLoading } = useAuthStore();
@@ -37,7 +20,7 @@ export default function Home() {
   // Show skeleton while checking auth status to prevent flashing
   if (isLoading) {
     return (
-      <main {...stylex.props(styles.skeletonMain)}>
+      <main className="min-h-screen bg-black">
         <Navbar />
         <TwitterLayoutSkeleton />
       </main>
@@ -49,7 +32,7 @@ export default function Home() {
   }
 
   return (
-    <main {...stylex.props(styles.main)}>
+    <main className="relative flex flex-col min-h-screen bg-[#02010a]">
       {/* Navbar */}
       <Navbar />
 
